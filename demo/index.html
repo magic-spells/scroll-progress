@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<title>Scroll Progress Web Component Demo</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<style>
+			body {
+				margin: 0;
+				background: #181824;
+				font-family: system-ui, sans-serif;
+				min-height: 300vh;
+			}
+			.demo-container {
+				max-width: 640px;
+				margin: 0 auto;
+				padding: 120px 0;
+			}
+			section {
+				margin: 0;
+			}
+			.parallax-section {
+				position: relative;
+				height: 440px;
+				margin-bottom: 120px;
+				overflow: visible;
+				border-radius: 30px;
+				box-shadow: 0 16px 60px #000a;
+			}
+			.parallax-bg {
+				position: absolute;
+				inset: 0;
+				background: linear-gradient(90deg, #7fd7e2 0%, #4731d3 100%);
+				z-index: 0;
+				border-radius: 30px;
+			}
+			.parallax-item {
+				position: absolute;
+				left: 50%;
+				width: 80%;
+				max-width: 480px;
+				border-radius: 24px;
+				box-shadow: 0 8px 32px #0002;
+				will-change: transform;
+				z-index: 2;
+				/* force gpu acceleration */
+				transform-style: preserve-3d;
+				backface-visibility: hidden;
+			}
+			.layer1 {
+				top: 36px;
+				height: 48px;
+				background: #ff95a3;
+				--parallax-ratio: 0.18;
+			}
+			.layer2 {
+				top: 84px;
+				height: 60px;
+				background: #ffeb3b;
+				--parallax-ratio: 0.4;
+			}
+			.layer3 {
+				top: 144px;
+				height: 70px;
+				background: #8affb3;
+				--parallax-ratio: 0.8;
+			}
+			.layer4 {
+				top: 214px;
+				height: 80px;
+				background: #7fd7e2;
+				--parallax-ratio: 1.2;
+			}
+			.layer5 {
+				top: 294px;
+				height: 92px;
+				background: #4731d3;
+				--parallax-ratio: 1.6;
+			}
+			/* use transform3d for better gpu optimization */
+			.parallax-item {
+				transform: translate3d(
+					-50%,
+					calc(var(--scroll-progress) * var(--parallax-ratio, 1) * -200px),
+					0
+				);
+			}
+			.reversed .parallax-item {
+				transform: translate3d(
+					-50%,
+					calc(var(--scroll-progress) * var(--parallax-ratio, 1) * 200px),
+					0
+				);
+			}
+
+			/* example: rotation effect */
+			.rotate-effect {
+				transform: translate3d(-50%, 0, 0) rotate(calc(var(--scroll-progress) * 360deg));
+			}
+
+			/* example: scale effect */
+			.scale-effect {
+				transform: translate3d(-50%, 0, 0) scale(calc(1 + var(--scroll-progress) * 0.5));
+			}
+
+			/* example: opacity fade */
+			.fade-effect {
+				opacity: calc(1 - var(--scroll-progress));
+			}
+
+			/* example: blur effect (careful with performance) */
+			.blur-effect {
+				filter: blur(calc(var(--scroll-progress) * 10px));
+			}
+
+			/* example: text effects */
+			.text-effect {
+				font-size: calc(1rem + var(--scroll-progress) * 2rem);
+				letter-spacing: calc(0.05em + var(--scroll-progress) * 0.2em);
+				color: hsl(calc(var(--scroll-progress) * 360), 70%, 50%);
+			}
+
+			/* example: combined effects */
+			.combined-effect {
+				transform: translate3d(-50%, calc(var(--scroll-progress) * -100px), 0)
+					rotate(calc(var(--scroll-progress) * 180deg))
+					scale(calc(1 - var(--scroll-progress) * 0.3));
+				opacity: calc(0.3 + var(--scroll-progress) * 0.7);
+				border-radius: calc(24px + var(--scroll-progress) * 26px);
+			}
+			.parallax-title {
+				position: absolute;
+				top: 12px;
+				left: 0;
+				width: 100%;
+				text-align: center;
+				font-size: 2rem;
+				color: #fff;
+				letter-spacing: 0.06em;
+				text-shadow: 0 2px 16px #0007;
+				font-weight: bold;
+				user-select: none;
+				pointer-events: none;
+				z-index: 10;
+			}
+			p.settings {
+				background: #2a2a2a;
+				color: #fff;
+				display: inline-block;
+				padding: 12px;
+				border-radius: 8px;
+				font-family: monospace;
+				text-align: left;
+				line-height: 1.4;
+				margin: 0 0 16px;
+			}
+
+			/* optimization for svgs */
+			.parallax-item svg {
+				/* prevent svg rendering issues */
+				shape-rendering: geometricPrecision;
+				/* ensure svgs don't trigger repaints */
+				will-change: transform;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="demo-container">
+			<!-- HERO SECTION -->
+			<section>
+				<div style="height: 200px"></div>
+				<p class="settings">
+					playhead-viewport-start="top"<br />
+					playhead-viewport-end="top"<br />
+					playhead-element-start="top"<br />
+					playhead-element-end="bottom"
+				</p>
+				<scroll-progress
+					playhead-element-start="top"
+					playhead-viewport-start="top"
+					playhead-element-end="bottom"
+					playhead-viewport-end="top"
+					class="parallax-section">
+					<div
+						class="parallax-bg"
+						style="background: linear-gradient(90deg, #f4a7b9 0%, #c0b6f2 100%)"></div>
+					<div class="parallax-title">hero playhead</div>
+					<div class="parallax-item layer1" style="--parallax-ratio: 0.19"></div>
+					<div class="parallax-item layer2" style="--parallax-ratio: 0.45"></div>
+					<div class="parallax-item layer3" style="--parallax-ratio: 0.9"></div>
+					<div class="parallax-item layer4" style="--parallax-ratio: 1.3"></div>
+					<div class="parallax-item layer5" style="--parallax-ratio: 1.7"></div>
+				</scroll-progress>
+			</section>
+
+			<!-- SYMMETRIC SECTION -->
+			<section>
+				<div style="height: 200px"></div>
+				<p class="settings">
+					playhead-viewport-start="center"<br />
+					playhead-viewport-end="center"<br />
+					playhead-element-start="top"<br />
+					playhead-element-end="bottom"
+				</p>
+				<scroll-progress
+					playhead-element-start="top"
+					playhead-viewport-start="center"
+					playhead-element-end="bottom"
+					playhead-viewport-end="center"
+					class="parallax-section">
+					<div
+						class="parallax-bg"
+						style="background: linear-gradient(90deg, #c6f1e7 0%, #7f7fd5 100%)"></div>
+					<div class="parallax-title">symmetric playhead</div>
+					<div class="parallax-item layer1" style="--parallax-ratio: 0.2"></div>
+					<div class="parallax-item layer2" style="--parallax-ratio: 0.5"></div>
+					<div class="parallax-item layer3" style="--parallax-ratio: 1"></div>
+					<div class="parallax-item layer4" style="--parallax-ratio: 1.35"></div>
+					<div class="parallax-item layer5" style="--parallax-ratio: 1.8"></div>
+				</scroll-progress>
+			</section>
+
+			<!-- DEFAULT SECTION -->
+			<section>
+				<div style="height: 200px"></div>
+				<p class="settings">
+					playhead-viewport-start="bottom"<br />
+					playhead-viewport-end="top"<br />
+					playhead-element-start="top"<br />
+					playhead-element-end="bottom"
+				</p>
+				<scroll-progress class="parallax-section">
+					<div class="parallax-bg"></div>
+					<div class="parallax-title">default playhead</div>
+					<div class="parallax-item layer1"></div>
+					<div class="parallax-item layer2"></div>
+					<div class="parallax-item layer3"></div>
+					<div class="parallax-item layer4"></div>
+					<div class="parallax-item layer5"></div>
+				</scroll-progress>
+			</section>
+
+			<!-- CENTER-CENTER SECTION -->
+			<section>
+				<div style="height: 200px"></div>
+				<p class="settings">
+					playhead-viewport-start="bottom"<br />
+					playhead-viewport-end="top"<br />
+					playhead-element-start="center"<br />
+					playhead-element-end="center"
+				</p>
+				<scroll-progress
+					playhead-element-start="center"
+					playhead-viewport-start="bottom"
+					playhead-element-end="center"
+					playhead-viewport-end="top"
+					class="parallax-section">
+					<div
+						class="parallax-bg"
+						style="background: linear-gradient(90deg, #e2d7f7 0%, #b38ff7 100%)"></div>
+					<div class="parallax-title">centered playhead</div>
+					<div class="parallax-item layer1" style="--parallax-ratio: 0.2"></div>
+					<div class="parallax-item layer2" style="--parallax-ratio: 0.5"></div>
+					<div class="parallax-item layer3" style="--parallax-ratio: 1"></div>
+					<div class="parallax-item layer4" style="--parallax-ratio: 1.35"></div>
+					<div class="parallax-item layer5" style="--parallax-ratio: 1.8"></div>
+				</scroll-progress>
+			</section>
+
+			<!-- PIN (STICKY) SECTION -->
+			<section>
+				<div style="height: 200px"></div>
+				<p class="settings">
+					playhead-viewport-start="top"<br />
+					playhead-viewport-end="top"<br />
+					playhead-element-start="top"<br />
+					playhead-element-end="bottom"
+				</p>
+				<scroll-progress
+					playhead-element-start="top"
+					playhead-viewport-start="top"
+					playhead-element-end="bottom"
+					playhead-viewport-end="top"
+					class="parallax-section">
+					<div
+						class="parallax-bg"
+						style="background: linear-gradient(90deg, #e6fa77 0%, #33c29a 100%)"></div>
+					<div class="parallax-title">pin (sticky)</div>
+					<div class="parallax-item layer1" style="--parallax-ratio: 0.24"></div>
+					<div class="parallax-item layer2" style="--parallax-ratio: 0.54"></div>
+					<div class="parallax-item layer3" style="--parallax-ratio: 0.95"></div>
+					<div class="parallax-item layer4" style="--parallax-ratio: 1.45"></div>
+					<div class="parallax-item layer5" style="--parallax-ratio: 1.8"></div>
+				</scroll-progress>
+			</section>
+
+			<!-- REVERSED HERO SECTION -->
+			<section>
+				<div style="height: 200px"></div>
+				<p class="settings">
+					playhead-viewport-start="bottom"<br />
+					playhead-viewport-end="top"<br />
+					playhead-element-start="top"<br />
+					playhead-element-end="center"
+				</p>
+				<scroll-progress
+					playhead-element-start="top"
+					playhead-element-end="center"
+					playhead-viewport-start="bottom"
+					playhead-viewport-end="center"
+					class="parallax-section reversed">
+					<div
+						class="parallax-bg"
+						style="background: linear-gradient(90deg, #d1fae5 0%, #81e1ff 100%)"></div>
+					<div class="parallax-title">reversed hero</div>
+					<div class="parallax-item layer1" style="--parallax-ratio: 0.13; top: 120px"></div>
+					<div class="parallax-item layer2" style="--parallax-ratio: 0.42; top: 140px"></div>
+					<div class="parallax-item layer3" style="--parallax-ratio: 0.83; top: 160px"></div>
+					<div class="parallax-item layer4" style="--parallax-ratio: 1.12; top: 180px"></div>
+					<div class="parallax-item layer5" style="--parallax-ratio: 1.68; top: 200px"></div>
+				</scroll-progress>
+			</section>
+
+			<!-- MULTI-EFFECT DEMO SECTION -->
+			<section>
+				<div style="height: 200px"></div>
+				<p class="settings">demonstrating rotation, scale, opacity, and color effects</p>
+				<scroll-progress class="parallax-section">
+					<div
+						class="parallax-bg"
+						style="background: linear-gradient(90deg, #ffd6a5 0%, #ff6b6b 100%)"></div>
+					<div class="parallax-title text-effect">multi-effects</div>
+					<!-- rotation demo -->
+					<div
+						class="parallax-item rotate-effect"
+						style="top: 36px; height: 48px; background: #ff6b6b">
+						<span style="display: block; text-align: center; line-height: 48px; color: white"
+							>rotating</span
+						>
+					</div>
+					<!-- scale demo -->
+					<div
+						class="parallax-item scale-effect"
+						style="top: 96px; height: 60px; background: #4ecdc4">
+						<span style="display: block; text-align: center; line-height: 60px; color: white"
+							>scaling</span
+						>
+					</div>
+					<!-- fade demo -->
+					<div
+						class="parallax-item fade-effect"
+						style="top: 166px; height: 60px; background: #45b7d1">
+						<span style="display: block; text-align: center; line-height: 60px; color: white"
+							>fading</span
+						>
+					</div>
+					<!-- combined effects -->
+					<div
+						class="parallax-item combined-effect"
+						style="top: 236px; height: 80px; background: #f7dc6f">
+						<span style="display: block; text-align: center; line-height: 80px; color: #333"
+							>combined</span
+						>
+					</div>
+				</scroll-progress>
+			</section>
+
+			<!-- 100vh BOTTOM SPACER -->
+			<div style="height: 100vh"></div>
+		</div>
+		<script type="module" src="scroll-progress.esm.js"></script>
+	</body>
+</html>

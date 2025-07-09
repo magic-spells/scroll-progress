@@ -1,0 +1,69 @@
+{
+	"name": "@magic-spells/scroll-progress",
+	"version": "0.1.0",
+	"description": "High-performance scroll progress web component with configurable playhead anchors and optimized animations.",
+	"author": "Cory Schulz",
+	"license": "MIT",
+	"type": "module",
+	"main": "dist/scroll-progress.cjs.js",
+	"module": "dist/scroll-progress.esm.js",
+	"unpkg": "dist/scroll-progress.min.js",
+	"exports": {
+		".": {
+			"import": "./dist/scroll-progress.esm.js",
+			"require": "./dist/scroll-progress.cjs.js",
+			"default": "./dist/scroll-progress.esm.js"
+		}
+	},
+	"sideEffects": true,
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/magic-spells/scroll-progress"
+	},
+	"homepage": "https://github.com/magic-spells/scroll-progress#readme",
+	"bugs": {
+		"url": "https://github.com/magic-spells/scroll-progress/issues"
+	},
+	"keywords": [
+		"scroll-progress",
+		"web-components",
+		"parallax",
+		"scroll-animation",
+		"custom-elements",
+		"performance",
+		"intersection-observer",
+		"css-variables"
+	],
+	"files": [
+		"dist/",
+		"src/"
+	],
+	"scripts": {
+		"build": "rollup -c",
+		"lint": "eslint src/ rollup.config.mjs",
+		"format": "prettier --write .",
+		"prepublishOnly": "npm run build",
+		"serve": "rollup -c --watch",
+		"dev": "rollup -c --watch"
+	},
+	"publishConfig": {
+		"access": "public",
+		"registry": "https://registry.npmjs.org/"
+	},
+	"browserslist": [
+		"last 2 versions",
+		"not dead",
+		"not ie <= 11"
+	],
+	"devDependencies": {
+		"@eslint/js": "^8.57.0",
+		"@rollup/plugin-node-resolve": "^15.2.3",
+		"@rollup/plugin-terser": "^0.4.4",
+		"eslint": "^8.0.0",
+		"globals": "^13.24.0",
+		"prettier": "^3.3.3",
+		"rollup": "^3.0.0",
+		"rollup-plugin-copy": "^3.5.0",
+		"rollup-plugin-serve": "^1.1.1"
+	}
+}
