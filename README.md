@@ -38,14 +38,14 @@ Add the custom element anywhere in your HTML:
 
 ```html
 <scroll-progress
-	playhead-element-start="top"
-	playhead-viewport-start="bottom"
-	playhead-element-end="bottom"
-	playhead-viewport-end="top">
-	<!-- child elements animated with --scroll-progress -->
-	<div class="animated-layer" style="transform: translateX(calc(var(--scroll-progress) * 100%));">
-		Scroll me!
-	</div>
+  playhead-element-start="top"
+  playhead-viewport-start="bottom"
+  playhead-element-end="bottom"
+  playhead-viewport-end="top">
+  <!-- child elements animated with --scroll-progress -->
+  <div class="animated-layer" style="transform: translateX(calc(var(--scroll-progress) * 100%));">
+    Scroll me!
+  </div>
 </scroll-progress>
 ```
 
@@ -84,8 +84,8 @@ Use this property in child elements to drive any CSS animation, e.g.:
 
 ```css
 .animated-layer {
-	transform: translateX(calc(var(--scroll-progress) * 100%));
-	transition: transform 0.1s ease-out;
+  transform: translateX(calc(var(--scroll-progress) * 100%));
+  transition: transform 0.1s ease-out;
 }
 ```
 
@@ -95,11 +95,11 @@ The component injects these base styles by default:
 
 ```css
 scroll-progress {
-	display: block;
-	--scroll-progress: 0;
-	will-change: transform;
-	transform-style: preserve-3d;
-	backface-visibility: hidden;
+  display: block;
+  --scroll-progress: 0;
+  will-change: transform;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
 }
 ```
 
@@ -123,7 +123,7 @@ const scrollProgress = document.querySelector('scroll-progress');
 
 // listen for progress updates
 scrollProgress.addEventListener('scroll-progress:update', (event) => {
-	console.log('scroll progress:', event.detail.progress);
+  console.log('scroll progress:', event.detail.progress);
 });
 
 // manually read progress

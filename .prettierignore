@@ -2,3 +2,4 @@
 **/*.min.css
 assets/
 node_modules/
+README.md
