@@ -12,7 +12,7 @@ A high-performance, customizable Web Component that tracks scroll progress relat
 - 🕵️‍♂️ **Visibility-aware** updates using Intersection Observer to minimize CPU usage
 - 📏 **Responsive to viewport resizes** with throttled resize handling
 - 🌐 **Framework agnostic** — works with any frontend framework or vanilla JS
-- 📦 **Lightweight & zero dependencies**
+- 📦 **Lightweight & zero dependencies** - Only 1.5kb gzipped!
 - 🔧 **Simple API & CSS custom property exposure** for full styling control
 
 ## Installation
