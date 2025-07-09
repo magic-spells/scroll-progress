@@ -44,8 +44,8 @@ Add the custom element anywhere in your HTML:
   playhead-viewport-end="top">
   <!-- child elements animated with --scroll-progress -->
   <div 
-  	class="animated-layer" 
-  	style="transform: translateX(calc(var(--scroll-progress) * 100%));">
+    class="animated-layer" 
+    style="transform: translateX(calc(var(--scroll-progress) * 100%));">
     Scroll me!
   </div>
 </scroll-progress>
