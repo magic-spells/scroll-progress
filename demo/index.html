@@ -27,6 +27,10 @@
 				border-radius: 30px;
 				box-shadow: 0 16px 60px #000a;
 			}
+			/* taller for velocity demo */
+			.velocity-demo {
+				height: 600px;
+			}
 			.parallax-bg {
 				position: absolute;
 				inset: 0;
@@ -161,6 +165,35 @@
 				shape-rendering: geometricPrecision;
 				/* ensure svgs don't trigger repaints */
 				will-change: transform;
+			}
+
+			/* velocity effects */
+			.velocity-effect {
+				transform: translate3d(-50%, 0, 0) skewX(calc(var(--scroll-progress-velocity) * 2deg));
+				border-radius: 8px; /* more rectangular */
+			}
+
+			.velocity-scale {
+				transform: translate3d(-50%, 0, 0) scale(calc(1 + abs(var(--scroll-progress-velocity)) * 0.01));
+			}
+
+			.velocity-rotate {
+				transform: translate3d(-50%, 0, 0) rotate(calc(var(--scroll-progress-velocity) * 2deg));
+			}
+
+			.velocity-blur {
+				filter: blur(calc(abs(var(--scroll-progress-velocity)) * 1px));
+				transform: translate3d(-50%, calc(var(--scroll-progress) * 100px), 0);
+			}
+
+			/* velocity-responsive background using OKLCH */
+			.velocity-bg {
+				background: oklch(
+					calc(0.85 - abs(var(--scroll-progress-velocity)) * 0.008) 
+					calc(0.12 + abs(var(--scroll-progress-velocity)) * 0.003) 
+					240
+				) !important;
+				transition: background 0.1s ease-out;
 			}
 		</style>
 	</head>
@@ -360,6 +393,49 @@
 						style="top: 236px; height: 80px; background: #f7dc6f">
 						<span style="display: block; text-align: center; line-height: 80px; color: #333"
 							>combined</span
+						>
+					</div>
+				</scroll-progress>
+			</section>
+
+			<!-- VELOCITY DEMO SECTION -->
+			<section>
+				<div style="height: 200px"></div>
+				<p class="settings">demonstrating --scroll-progress-velocity effects (NEW!)</p>
+				<scroll-progress class="parallax-section velocity-demo">
+					<div
+						class="parallax-bg velocity-bg"></div>
+					<div class="parallax-title">velocity effects</div>
+					<!-- skew based on velocity -->
+					<div
+						class="parallax-item velocity-effect"
+						style="top: 30px; height: 100px; background: #ff9a9e; width: 60%;">
+						<span style="display: block; text-align: center; line-height: 100px; color: white; font-weight: bold; font-size: 1.1rem;"
+							>SKEW ON VELOCITY</span
+						>
+					</div>
+					<!-- scale based on velocity -->
+					<div
+						class="parallax-item velocity-scale"
+						style="top: 160px; height: 60px; background: #a18cd1">
+						<span style="display: block; text-align: center; line-height: 60px; color: white"
+							>velocity scale</span
+						>
+					</div>
+					<!-- rotate based on velocity -->
+					<div
+						class="parallax-item velocity-rotate"
+						style="top: 250px; height: 60px; background: #fbc2eb">
+						<span style="display: block; text-align: center; line-height: 60px; color: #333"
+							>velocity rotate</span
+						>
+					</div>
+					<!-- blur based on velocity -->
+					<div
+						class="parallax-item velocity-blur"
+						style="top: 420px; height: 60px; background: #1a1a1a; border: 2px solid #fff;">
+						<span style="display: block; text-align: center; line-height: 56px; color: #fff; font-weight: bold;"
+							>VELOCITY BLUR + PARALLAX DOWN</span
 						>
 					</div>
 				</scroll-progress>

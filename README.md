@@ -1,6 +1,6 @@
 # Scroll Progress Web Component
 
-A high-performance, customizable Web Component that tracks scroll progress relative to configurable playhead anchors on the element and viewport. It exposes a smooth, GPU-accelerated CSS variable (`--scroll-progress`) for scroll-based animations without relying on scroll event listeners.
+A high-performance, customizable Web Component that tracks scroll progress relative to configurable playhead anchors on the element and viewport. It exposes smooth, GPU-accelerated CSS variables (`--scroll-progress` and `--scroll-progress-velocity`) for scroll-based animations without relying on scroll event listeners.
 
 [**Live Demo**](https://magic-spells.github.io/scroll-progress/demo/)
 
@@ -11,6 +11,7 @@ A high-performance, customizable Web Component that tracks scroll progress relat
 - 🖥️ **GPU accelerated** using `transform-style: preserve-3d` and `will-change: transform`
 - 🕵️‍♂️ **Visibility-aware** updates using Intersection Observer to minimize CPU usage
 - 📏 **Responsive to viewport resizes** with throttled resize handling
+- 🌊 **Scroll velocity tracking** with physics simulation (friction, attraction to zero)
 - 🌐 **Framework agnostic** — works with any frontend framework or vanilla JS
 - 📦 **Lightweight & zero dependencies** - Only 1.5kb gzipped!
 - 🔧 **Simple API & CSS custom property exposure** for full styling control
@@ -65,6 +66,7 @@ These determine the start and end points for scroll progress calculation.
 ### Public Methods
 
 - `getProgress()`: Returns current scroll progress (0 to 1)
+- `getVelocity()`: Returns current scroll velocity
 - `update()`: Manually triggers recalculation of cached positions
 - `pause()`: Pauses the internal animation frame loop
 - `resume()`: Resumes the internal animation frame loop
@@ -73,21 +75,32 @@ These determine the start and end points for scroll progress calculation.
 
 - `scroll-progress:update`: Fired whenever the scroll progress updates significantly
   - `event.detail.progress`: number between 0 and 1
+- `scroll-progress:velocity`: Fired whenever the scroll velocity updates significantly
+  - `event.detail.velocity`: scroll velocity with physics simulation
 
 ---
 
 ## Customization
 
-The component exposes a single CSS custom property:
+The component exposes CSS custom properties:
 
 - `--scroll-progress` — value between 0 and 1 representing the normalized scroll position between configured playheads
+- `--scroll-progress-velocity` — scroll velocity with smooth physics simulation (friction, attraction to zero)
 
-Use this property in child elements to drive any CSS animation, e.g.:
+Use these properties in child elements to drive any CSS animation, e.g.:
 
 ```css
 .animated-layer {
   transform: translateX(calc(var(--scroll-progress) * 100%));
   transition: transform 0.1s ease-out;
+}
+
+.velocity-skew {
+  transform: skewX(calc(var(--scroll-progress-velocity) * 2deg));
+}
+
+.velocity-blur {
+  filter: blur(calc(abs(var(--scroll-progress-velocity)) * 1px));
 }
 ```
 
@@ -99,6 +112,7 @@ The component injects these base styles by default:
 scroll-progress {
   display: block;
   --scroll-progress: 0;
+  --scroll-progress-velocity: 0;
   will-change: transform;
   transform-style: preserve-3d;
   backface-visibility: hidden;
@@ -112,9 +126,13 @@ Override these as needed in your stylesheets.
 ## How It Works
 
 - On initialization, the component calculates anchor positions relative to both the element and viewport.
-- Scroll progress is updated via `requestAnimationFrame` loops only when the element is visible in the viewport, leveraging `IntersectionObserver` for gating.
+- Scroll progress and velocity are updated via `requestAnimationFrame` loops only when the element is visible in the viewport, leveraging `IntersectionObserver` for gating.
+- **Velocity system** tracks scroll delta frame-to-frame and applies physics:
+  - Smooth velocity accumulation with configurable smoothing
+  - Friction and attraction to zero for natural decay
+  - Clean zero state when velocity reaches threshold
 - Resizes trigger recalculations of viewport and element anchors with a throttled resize event listener.
-- Scroll progress is exposed as a CSS variable (`--scroll-progress`) for smooth, GPU-accelerated animations with no scroll event listeners, improving performance.
+- Both scroll progress and velocity are exposed as CSS variables for smooth, GPU-accelerated animations with no scroll event listeners, improving performance.
 
 ---
 
@@ -128,8 +146,14 @@ scrollProgress.addEventListener('scroll-progress:update', (event) => {
   console.log('scroll progress:', event.detail.progress);
 });
 
-// manually read progress
+// listen for velocity updates
+scrollProgress.addEventListener('scroll-progress:velocity', (event) => {
+  console.log('scroll velocity:', event.detail.velocity);
+});
+
+// manually read progress and velocity
 console.log(scrollProgress.getProgress());
+console.log(scrollProgress.getVelocity());
 ```
 
 ---
