@@ -1,3 +1,5 @@
+![gzip size](https://img.shields.io/badge/gzip-1.9kb-blue)
+
 # Scroll Progress Web Component
 
 A high-performance, customizable Web Component that tracks scroll progress relative to configurable playhead anchors on the element and viewport. It exposes smooth, GPU-accelerated CSS variables (`--scroll-progress` and `--scroll-progress-velocity`) for scroll-based animations without relying on scroll event listeners.
@@ -13,7 +15,7 @@ A high-performance, customizable Web Component that tracks scroll progress relat
 - 📏 **Responsive to viewport resizes** with throttled resize handling
 - 🌊 **Scroll velocity tracking** with physics simulation (friction, attraction to zero)
 - 🌐 **Framework agnostic** — works with any frontend framework or vanilla JS
-- 📦 **Lightweight & zero dependencies** - Only 1.5kb gzipped!
+- 📦 **Lightweight & zero dependencies** - Only 1.9kb gzipped!
 - 🔧 **Simple API & CSS custom property exposure** for full styling control
 
 ## Installation
@@ -180,7 +182,3 @@ MIT
 [https://github.com/magic-spells/scroll-progress](https://github.com/magic-spells/scroll-progress)
 
 Report bugs and request features via GitHub issues.
-
----
-
-If you want, i can help format this as markdown or add badges or any additional sections you want. Just let me know!

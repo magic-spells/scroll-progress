@@ -5,11 +5,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ### Development
-- `npm run dev` - Start development server with watch mode and auto-reload at localhost:3001
-- `npm run serve` - Same as dev, alias for development server
+- `npm run dev` - Start Vite dev server at localhost:3001 (opens demo/index.html)
+- `npm run prod` - Build with watch mode for production testing
 
 ### Building
-- `npm run build` - Build all distribution formats (ESM, CommonJS, UMD, minified UMD)
+- `npm run build` - Build distribution formats (ESM, UMD minified)
 
 ### Code Quality
 - `npm run lint` - Run ESLint on source files and config files
@@ -36,16 +36,16 @@ This is a **vanilla Web Component** library that creates a `<scroll-progress>` c
 - **Static style injection**: Injects base styles once per component definition
 
 ### Build System
-- **Rollup-based**: Multi-format builds (ESM, CJS, UMD, minified UMD)
-- **Development mode**: Serves demo files and copies built files to demo directory
+- **Vite-based**: Two-format builds (ESM, UMD minified)
+- **Development mode**: Vite dev server serves source directly at localhost:3001
 - **No transpilation**: Modern browser targets, ES2022 syntax
 
 ### File Structure
 - `src/scroll-progress.js` - Main component implementation
-- `demo/` - Development demo files (HTML + copied built files)
-- `dist/` - Built distribution files in multiple formats
-- `rollup.config.mjs` - Build configuration with development server
-- `eslint.config.mjs` - ESLint configuration for modern ES modules
+- `demo/` - Development demo files (HTML, served by Vite)
+- `dist/` - Built distribution files (ESM + UMD)
+- `vite.config.js` - Build and dev server configuration
+- `eslint.config.js` - ESLint flat config for modern ES modules
 
 ### Component Attributes
 - `playhead-element-start/end` - Element anchor points (top/center/bottom)

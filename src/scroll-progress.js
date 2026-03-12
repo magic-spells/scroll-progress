@@ -22,6 +22,9 @@ function clamp(value, min, max) {
 	return Math.max(min, Math.min(max, value));
 }
 
+// cached media query for prefers-reduced-motion
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
 // main global scroll + velocity manager
 const ScrollProgressManager = {
 	elements: new Set(),
@@ -48,6 +51,7 @@ const ScrollProgressManager = {
 	},
 
 	start() {
+		if (this.isListening) return;
 		this.lastScrollY = window.scrollY;
 		this._boundScroll = this.onScroll.bind(this);
 		window.addEventListener('scroll', this._boundScroll, { passive: true });
@@ -69,14 +73,13 @@ const ScrollProgressManager = {
 		this.lastScrollY = y;
 
 		// respects prefers-reduced-motion
-		if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+		if (reducedMotion.matches) {
 			this.velocity = 0;
 			this.tick();
 			return;
 		}
 
-		const target = this.velocity + delta;
-		this.velocity += (target - this.velocity) * this.smoothing;
+		this.velocity += (delta - this.velocity) * this.smoothing;
 		this.velocity = clamp(this.velocity, -this.maxVelocity, this.maxVelocity);
 		this.tick();
 	},
@@ -90,7 +93,7 @@ const ScrollProgressManager = {
 		this.rafId = null;
 
 		// simulate velocity physics
-		if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+		if (!reducedMotion.matches) {
 			this.velocity *= this.friction;
 			this.velocity *= this.attraction;
 			if (Math.abs(this.velocity) < this.velocityThreshold) this.velocity = 0;
@@ -103,7 +106,8 @@ const ScrollProgressManager = {
 
 		// update all registered, visible, unpaused elements
 		for (const el of this.elements) {
-			if (!el._isVisible() || el._isPaused()) continue;
+			if (!el._intersectionObserver) el._updateVisibilityFallback();
+			if (!el._visible || el._paused) continue;
 			el._receiveVelocity(this.velocity);
 			el._tickProgress(viewportHeight);
 			// if velocity still exists, keep ticking
@@ -122,8 +126,8 @@ class ScrollProgress extends HTMLElement {
 	constructor() {
 		super();
 		this._cache = null; // stores anchor geometry for math
-		this._isVisible = false; // intersection state
-		this._isPaused = false; // paused flag
+		this._visible = false; // intersection state
+		this._paused = false; // paused flag
 		this._lastProgress = -1; // last progress written
 		this._lastVelocity = 0; // last velocity written
 		this._resizeHandler = null; // debounced resize listener
@@ -178,35 +182,31 @@ class ScrollProgress extends HTMLElement {
 	}
 
 	pause() {
-		this._isPaused = true;
+		this._paused = true;
 	}
 
 	resume() {
-		this._isPaused = false;
+		this._paused = false;
 		ScrollProgressManager.tick();
 	}
 
 	// internal methods
 
-	_isVisible() {
-		return this._isVisible;
-	}
-	_isPaused() {
-		return this._isPaused;
-	}
-
 	_receiveVelocity(velocity) {
-		// only write and dispatch if changed enough
-		if (Math.abs(velocity - this._lastVelocity) > 0.1) {
-			this._lastVelocity = velocity;
-			this.style.setProperty('--scroll-progress-velocity', String(velocity));
-			this.dispatchEvent(
-				new CustomEvent('scroll-progress:velocity', {
-					detail: { velocity },
-					bubbles: true,
-				})
-			);
+		// always emit on zero-crossing, otherwise only if changed enough
+		if (velocity === 0 && this._lastVelocity !== 0) {
+			// force emit zero
+		} else if (Math.abs(velocity - this._lastVelocity) <= 0.1) {
+			return;
 		}
+		this._lastVelocity = velocity;
+		this.style.setProperty('--scroll-progress-velocity', String(velocity));
+		this.dispatchEvent(
+			new CustomEvent('scroll-progress:velocity', {
+				detail: { velocity },
+				bubbles: true,
+			})
+		);
 	}
 
 	_tickProgress(viewportHeight) {
@@ -260,8 +260,8 @@ class ScrollProgress extends HTMLElement {
 				(entries) => {
 					for (const entry of entries) {
 						if (entry.target === this) {
-							this._isVisible = entry.isIntersecting;
-							if (this._isVisible) ScrollProgressManager.tick();
+							this._visible = entry.isIntersecting;
+							if (this._visible) ScrollProgressManager.tick();
 						}
 					}
 				},
@@ -275,7 +275,7 @@ class ScrollProgress extends HTMLElement {
 				for (const entry of entries) {
 					if (entry.target === this) {
 						this._buildCache();
-						if (this._isVisible) ScrollProgressManager.tick();
+						if (this._visible) ScrollProgressManager.tick();
 					}
 				}
 			});
@@ -297,7 +297,7 @@ class ScrollProgress extends HTMLElement {
 	_attachResizeListener() {
 		this._resizeHandler = throttle(() => {
 			this._buildCache();
-			if (this._isVisible) ScrollProgressManager.tick();
+			if (this._visible) ScrollProgressManager.tick();
 		}, 50);
 		window.addEventListener('resize', this._resizeHandler);
 	}
@@ -311,7 +311,7 @@ class ScrollProgress extends HTMLElement {
 
 	_updateVisibilityFallback() {
 		const r = this.getBoundingClientRect();
-		this._isVisible = r.bottom > 0 && r.top < window.innerHeight;
+		this._visible = r.bottom > 0 && r.top < window.innerHeight;
 	}
 
 	_injectBaseStyles() {
