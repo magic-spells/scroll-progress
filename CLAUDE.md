@@ -23,16 +23,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This is a **vanilla Web Component** library that creates a `<scroll-progress>` custom element for tracking scroll progress without scroll event listeners.
 
 ### Core Architecture
-- **Single file implementation**: All functionality is in `src/scroll-progress.js` (~289 lines)
-- **Web Component**: Extends `HTMLElement` and uses `customElements.define()`
+- **Single file implementation**: All functionality is in `src/scroll-progress.js` (~383 lines)
+- **Web Component**: `ScrollProgress` class extends `HTMLElement`, registered via `customElements.define()`
+- **Global manager singleton**: `ScrollProgressManager` runs a single shared RAF loop and velocity calculation for all `<scroll-progress>` instances
+- **Viewport metrics**: `ViewportMetrics` helper uses a `100svh` probe element to get stable viewport height on mobile Safari (avoids chrome bar shifts)
 - **Performance-focused**: Uses `requestAnimationFrame` + `IntersectionObserver` instead of scroll events
-- **CSS Variable API**: Exposes `--scroll-progress` (0-1) for animations
+- **CSS Variable API**: Exposes `--scroll-progress` (0-1) and `--scroll-progress-velocity` for animations
+- **Reduced motion**: Respects `prefers-reduced-motion: reduce` — velocity is forced to 0
 
 ### Key Design Patterns
-- **Hybrid privacy**: `#` private fields for internal state, `_` prefix for methods accessed by ScrollProgressManager
-- **Observer pattern**: `IntersectionObserver` for visibility, `ResizeObserver` for element changes
-- **Caching strategy**: Pre-calculates positions to minimize DOM reads during scroll
-- **RAF loop**: Continuous update loop only when element is visible
+- **Hybrid privacy**: `#` private fields for internal state, `_` prefix for methods called by `ScrollProgressManager`
+- **Observer pattern**: `IntersectionObserver` for visibility gating, `ResizeObserver` for element size changes
+- **Caching strategy**: Pre-calculates anchor positions to minimize DOM reads during scroll
+- **Global RAF loop**: Single `requestAnimationFrame` loop in `ScrollProgressManager` updates all visible elements; stops when velocity reaches 0
 - **Static style injection**: Injects base styles once per component definition
 
 ### Build System
@@ -66,14 +69,14 @@ This is a **vanilla Web Component** library that creates a `<scroll-progress>` c
 - `scroll-progress:velocity` - Fired when velocity changes (detail.velocity)
 
 ### Velocity System
-The velocity system tracks scroll delta frame-to-frame and applies physics:
-- **Delta calculation**: `scrollDelta = currentScrollY - lastScrollY`
-- **Smooth velocity accumulation**: `velocity += (targetVelocity - velocity) * smoothing` (15% smoothing)
-- **Friction**: `velocity *= 0.8` (configurable via `#friction` field)
-- **Attraction to zero**: `velocity *= 0.95` (configurable via `#attraction` field)
-- **Clean zero state**: When velocity < 0.01 and no scrolling, velocity is set to exactly 0
-- **RAF optimization**: Loop stops when element inactive AND velocity is exactly 0
-- **Clamping**: Velocity is clamped to ±100 to prevent extreme values
+The velocity system lives in `ScrollProgressManager` and tracks scroll delta frame-to-frame with physics:
+- **Delta calculation**: `scrollDelta = currentScrollY - lastScrollY` (in `onScroll`)
+- **Smooth velocity accumulation**: `velocity += (delta - velocity) * smoothing` (smoothing = 0.15)
+- **Combined decay**: `velocity *= decay` where `decay = 0.76` (friction 0.8 × attraction 0.95 combined into single multiply)
+- **Clean zero state**: When `|velocity| < 0.01` (`velocityThreshold`), velocity snaps to exactly 0
+- **RAF optimization**: Global RAF loop stops when velocity reaches 0; restarts on scroll/resize
+- **Clamping**: Velocity clamped to ±100 (`maxVelocity`)
+- **Reduced motion**: When `prefers-reduced-motion: reduce` matches, velocity is forced to 0
 
 **Demo Effects Available:**
 - Skew: `skewX(calc(var(--scroll-progress-velocity) * 2deg))` - dramatic leaning effect

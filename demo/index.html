@@ -731,34 +731,6 @@
       transform: scale(1);
     }
 
-    /* ---- DEMO 8: Velocity ---- */
-    .vel-skew {
-      transform: translate3d(-50%, 0, 0) skewX(calc(var(--scroll-progress-velocity) * 3deg));
-      border-radius: 8px;
-    }
-
-    .vel-scale {
-      transform: translate3d(-50%, 0, 0) scale(calc(1 + abs(var(--scroll-progress-velocity)) * 0.015));
-    }
-
-    .vel-rotate {
-      transform: translate3d(-50%, 0, 0) rotate(calc(var(--scroll-progress-velocity) * 3deg));
-    }
-
-    .vel-blur {
-      filter: blur(calc(abs(var(--scroll-progress-velocity)) * 1.5px));
-      transform: translate3d(-50%, calc(var(--scroll-progress) * 120px), 0);
-    }
-
-    .vel-bg {
-      background: oklch(
-        calc(0.2 - abs(var(--scroll-progress-velocity)) * 0.004)
-        calc(0.05 + abs(var(--scroll-progress-velocity)) * 0.004)
-        280
-      ) !important;
-      transition: background 0.08s ease-out;
-    }
-
     /* ---- Animations ---- */
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(20px); }
@@ -1159,36 +1131,6 @@
         <!-- spreading text along the bottom -->
         <div class="fx-spread-text">effects</div>
 
-      </scroll-progress>
-    </section>
-
-    <!-- 08 VELOCITY EFFECTS -->
-    <section class="demo-card">
-      <h2>Velocity Effects</h2>
-      <p class="desc">Responds to scroll speed, not position. Skew, scale, rotation, and blur all react to how fast you're scrolling — with physics-based decay.</p>
-      <p class="settings">--scroll-progress-velocity (physics simulation)</p>
-      <scroll-progress class="demo-stage demo-stage-tall">
-        <div class="stage-bg vel-bg"></div>
-        <div
-          class="layer vel-skew"
-          style="top: 30px; height: 100px; background: var(--cyan); color: var(--bg-deep); width: 60%; font-weight: 500; font-size: 0.85rem">
-          skew on velocity
-        </div>
-        <div
-          class="layer vel-scale"
-          style="top: 160px; height: 60px; background: var(--violet); color: white">
-          velocity scale
-        </div>
-        <div
-          class="layer vel-rotate"
-          style="top: 250px; height: 60px; background: var(--lime); color: var(--bg-deep)">
-          velocity rotate
-        </div>
-        <div
-          class="layer vel-blur"
-          style="top: 420px; height: 60px; background: var(--bg-deep); border: 1px solid var(--cyan); color: var(--cyan); font-weight: 500">
-          velocity blur + parallax
-        </div>
       </scroll-progress>
     </section>
 

@@ -10,13 +10,15 @@ A high-performance, customizable Web Component that tracks scroll progress relat
 
 - 🎯 **Configurable playhead anchors** for both element and viewport start/end positions
 - ⚡ **Optimized animations** driven by `requestAnimationFrame` (no scroll events)
-- 🖥️ **GPU accelerated** using `transform-style: preserve-3d` and `will-change: transform`
+- 🖥️ **GPU accelerated** using `will-change: transform` and `backface-visibility: hidden`
 - 🕵️‍♂️ **Visibility-aware** updates using Intersection Observer to minimize CPU usage
 - 📏 **Responsive to viewport resizes** with throttled resize handling
 - 🌊 **Scroll velocity tracking** with physics simulation (friction, attraction to zero)
 - 🌐 **Framework agnostic** — works with any frontend framework or vanilla JS
 - 📦 **Lightweight & zero dependencies** - Only 1.9kb gzipped!
 - 🔧 **Simple API & CSS custom property exposure** for full styling control
+- ♿ **Respects `prefers-reduced-motion`** — velocity is disabled when reduced motion is preferred
+- 📱 **Mobile Safari safe** — uses `100svh` viewport probe to avoid address bar layout shifts
 
 ## Installation
 
@@ -116,7 +118,6 @@ scroll-progress {
   --scroll-progress: 0;
   --scroll-progress-velocity: 0;
   will-change: transform;
-  transform-style: preserve-3d;
   backface-visibility: hidden;
 }
 ```
@@ -127,14 +128,16 @@ Override these as needed in your stylesheets.
 
 ## How It Works
 
-- On initialization, the component calculates anchor positions relative to both the element and viewport.
-- Scroll progress and velocity are updated via `requestAnimationFrame` loops only when the element is visible in the viewport, leveraging `IntersectionObserver` for gating.
+- A global `ScrollProgressManager` singleton runs a single shared `requestAnimationFrame` loop for all `<scroll-progress>` instances on the page.
+- On initialization, each component calculates anchor positions relative to both the element and viewport. A `ViewportMetrics` helper measures stable viewport height via a `100svh` probe to avoid mobile Safari address bar shifts.
+- Scroll progress is updated per-element only when visible, gated by `IntersectionObserver`. Elements that are off-screen skip updates entirely.
 - **Velocity system** tracks scroll delta frame-to-frame and applies physics:
-  - Smooth velocity accumulation with configurable smoothing
-  - Friction and attraction to zero for natural decay
-  - Clean zero state when velocity reaches threshold
-- Resizes trigger recalculations of viewport and element anchors with a throttled resize event listener.
-- Both scroll progress and velocity are exposed as CSS variables for smooth, GPU-accelerated animations with no scroll event listeners, improving performance.
+  - Smooth velocity accumulation (15% smoothing factor)
+  - Combined friction + attraction decay (0.76× per frame) for natural deceleration
+  - Clean zero state when velocity drops below threshold
+- The global RAF loop automatically stops when velocity reaches zero and restarts on the next scroll or resize event.
+- When `prefers-reduced-motion: reduce` is active, velocity is forced to 0.
+- Both scroll progress and velocity are exposed as CSS variables for smooth, GPU-accelerated animations with no scroll event listeners.
 
 ---
 
@@ -177,8 +180,6 @@ MIT
 
 ---
 
-## Repository & Issues
-
-[https://github.com/magic-spells/scroll-progress](https://github.com/magic-spells/scroll-progress)
-
-Report bugs and request features via GitHub issues.
+<p align="center">
+  Made by <a href="https://github.com/coryschulz">Cory Schulz</a>
+</p>
