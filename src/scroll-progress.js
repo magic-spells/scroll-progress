@@ -2,7 +2,7 @@
   scroll-progress web component
   tracks scroll progress (0 to 1) and velocity for parallax or animation use
   uses a single global rAF for velocity, and per-element observers for performance
-  no #private fields, supports all browsers
+  uses #private fields for internal state, _ prefix for manager-facing methods
 */
 
 // throttle helper: limits how often a function can run
@@ -177,17 +177,22 @@ const ScrollProgressManager = {
 
 // the web component
 class ScrollProgress extends HTMLElement {
+	// private fields
+	#cache = null;
+	#lastProgress = -1;
+	#lastVelocity = 0;
+	#resizeHandler = null;
+	#resizeObserver = null;
+	static #styleInjected = false;
+
+	// public fields (accessed by ScrollProgressManager)
+	_visible = false;
+	_paused = false;
+	_intersectionObserver = null;
+
 	constructor() {
 		super();
-		this._cache = null; // stores anchor geometry for math
-		this._visible = false; // intersection state
-		this._paused = false; // paused flag
-		this._lastProgress = -1; // last progress written
-		this._lastVelocity = 0; // last velocity written
-		this._resizeHandler = null; // debounced resize listener
-		this._resizeObserver = null; // observes element size
-		this._intersectionObserver = null; // observes visibility
-		this._injectBaseStyles();
+		this.#injectBaseStyles();
 	}
 
 	static get observedAttributes() {
@@ -200,19 +205,21 @@ class ScrollProgress extends HTMLElement {
 	}
 
 	connectedCallback() {
+		const _ = this;
 		ViewportMetrics.init();
-		this._buildCache();
-		this._setupObservers();
-		this._attachResizeListener();
-		this._updateVisibilityFallback();
-		this._tickProgress();
-		ScrollProgressManager.register(this);
+		_._buildCache();
+		_.#setupObservers();
+		_.#attachResizeListener();
+		_._updateVisibilityFallback();
+		_._tickProgress();
+		ScrollProgressManager.register(_);
 	}
 
 	disconnectedCallback() {
-		this._removeObservers();
-		this._removeResizeListener();
-		ScrollProgressManager.unregister(this);
+		const _ = this;
+		_.#removeObservers();
+		_.#removeResizeListener();
+		ScrollProgressManager.unregister(_);
 	}
 
 	attributeChangedCallback() {
@@ -245,18 +252,19 @@ class ScrollProgress extends HTMLElement {
 		ScrollProgressManager.tick();
 	}
 
-	// internal methods
+	// manager-facing methods (called by ScrollProgressManager)
 
 	_receiveVelocity(velocity) {
+		const _ = this;
 		// always emit on zero-crossing, otherwise only if changed enough
-		if (velocity === 0 && this._lastVelocity !== 0) {
+		if (velocity === 0 && _.#lastVelocity !== 0) {
 			// force emit zero
-		} else if (Math.abs(velocity - this._lastVelocity) <= 0.1) {
+		} else if (Math.abs(velocity - _.#lastVelocity) <= 0.1) {
 			return;
 		}
-		this._lastVelocity = velocity;
-		this.style.setProperty('--scroll-progress-velocity', String(velocity));
-		this.dispatchEvent(
+		_.#lastVelocity = velocity;
+		_.style.setProperty('--scroll-progress-velocity', String(velocity));
+		_.dispatchEvent(
 			new CustomEvent('scroll-progress:velocity', {
 				detail: { velocity },
 				bubbles: true,
@@ -265,16 +273,17 @@ class ScrollProgress extends HTMLElement {
 	}
 
 	_tickProgress() {
-		if (!this._cache) return;
-		const rect = this.getBoundingClientRect();
+		const _ = this;
+		if (!_.#cache) return;
+		const rect = _.getBoundingClientRect();
 
-		const travelled = this._cache.startTop - rect.top;
-		const progress = clamp(this._cache.distance ? travelled / this._cache.distance : 0, 0, 1);
+		const travelled = _.#cache.startTop - rect.top;
+		const progress = clamp(_.#cache.distance ? travelled / _.#cache.distance : 0, 0, 1);
 
-		if (Math.abs(progress - this._lastProgress) > 0.001) {
-			this._lastProgress = progress;
-			this.style.setProperty('--scroll-progress', String(progress));
-			this.dispatchEvent(
+		if (Math.abs(progress - _.#lastProgress) > 0.001) {
+			_.#lastProgress = progress;
+			_.style.setProperty('--scroll-progress', String(progress));
+			_.dispatchEvent(
 				new CustomEvent('scroll-progress:update', {
 					detail: { progress },
 					bubbles: true,
@@ -284,13 +293,13 @@ class ScrollProgress extends HTMLElement {
 	}
 
 	_buildCache() {
-		// resolve anchors
-		const es = this.getAttribute('playhead-element-start') || 'top';
-		const vs = this.getAttribute('playhead-viewport-start') || 'bottom';
-		const ee = this.getAttribute('playhead-element-end') || 'bottom';
-		const ve = this.getAttribute('playhead-viewport-end') || 'top';
+		const _ = this;
+		const es = _.getAttribute('playhead-element-start') || 'top';
+		const vs = _.getAttribute('playhead-viewport-start') || 'bottom';
+		const ee = _.getAttribute('playhead-element-end') || 'bottom';
+		const ve = _.getAttribute('playhead-viewport-end') || 'top';
 
-		const rect = this.getBoundingClientRect();
+		const rect = _.getBoundingClientRect();
 		const vh = ViewportMetrics.refresh().stableHeight;
 
 		const elOffset = (a, r) => (a === 'top' ? 0 : a === 'center' ? r.height / 2 : r.height);
@@ -301,77 +310,78 @@ class ScrollProgress extends HTMLElement {
 		const startTop = vpOffset(vs, vh) - startOffset;
 		const endTop = vpOffset(ve, vh) - endOffset;
 
-		this._cache = {
-			startTop,
-			endTop,
-			distance: startTop - endTop,
-		};
+		_.#cache = { startTop, endTop, distance: startTop - endTop };
 	}
 
-	_setupObservers() {
-		// intersection observer for visibility
+	_updateVisibilityFallback() {
+		const _ = this;
+		const viewportHeight = ViewportMetrics.refresh().currentHeight;
+		const r = _.getBoundingClientRect();
+		_._visible = r.bottom > 0 && r.top < viewportHeight;
+	}
+
+	// private methods (internal only)
+
+	#setupObservers() {
+		const _ = this;
 		if ('IntersectionObserver' in window) {
-			this._intersectionObserver = new window.IntersectionObserver(
+			_._intersectionObserver = new window.IntersectionObserver(
 				(entries) => {
 					for (const entry of entries) {
-						if (entry.target === this) {
-							this._visible = entry.isIntersecting;
-							if (this._visible) ScrollProgressManager.tick();
+						if (entry.target === _) {
+							_._visible = entry.isIntersecting;
+							if (_._visible) ScrollProgressManager.tick();
 						}
 					}
 				},
 				{ threshold: [0, 0.001, 1] }
 			);
-			this._intersectionObserver.observe(this);
+			_._intersectionObserver.observe(_);
 		}
-		// resize observer for element size
 		if ('ResizeObserver' in window) {
-			this._resizeObserver = new window.ResizeObserver((entries) => {
+			_.#resizeObserver = new window.ResizeObserver((entries) => {
 				for (const entry of entries) {
-					if (entry.target === this) {
-						this._buildCache();
-						if (this._visible) ScrollProgressManager.tick();
+					if (entry.target === _) {
+						_._buildCache();
+						if (_._visible) ScrollProgressManager.tick();
 					}
 				}
 			});
-			this._resizeObserver.observe(this);
+			_.#resizeObserver.observe(_);
 		}
 	}
 
-	_removeObservers() {
-		if (this._intersectionObserver) {
-			this._intersectionObserver.disconnect();
-			this._intersectionObserver = null;
+	#removeObservers() {
+		const _ = this;
+		if (_._intersectionObserver) {
+			_._intersectionObserver.disconnect();
+			_._intersectionObserver = null;
 		}
-		if (this._resizeObserver) {
-			this._resizeObserver.disconnect();
-			this._resizeObserver = null;
+		if (_.#resizeObserver) {
+			_.#resizeObserver.disconnect();
+			_.#resizeObserver = null;
 		}
 	}
 
-	_attachResizeListener() {
-		this._resizeHandler = throttle(() => {
-			this._buildCache();
-			if (this._visible) ScrollProgressManager.tick();
+	#attachResizeListener() {
+		const _ = this;
+		_.#resizeHandler = throttle(() => {
+			_._buildCache();
+			if (_._visible) ScrollProgressManager.tick();
 		}, 50);
-		window.addEventListener('resize', this._resizeHandler);
+		window.addEventListener('resize', _.#resizeHandler);
 	}
 
-	_removeResizeListener() {
-		if (this._resizeHandler) {
-			window.removeEventListener('resize', this._resizeHandler);
-			this._resizeHandler = null;
+	#removeResizeListener() {
+		const _ = this;
+		if (_.#resizeHandler) {
+			window.removeEventListener('resize', _.#resizeHandler);
+			_.#resizeHandler = null;
 		}
 	}
 
-	_updateVisibilityFallback() {
-		const viewportHeight = ViewportMetrics.refresh().currentHeight;
-		const r = this.getBoundingClientRect();
-		this._visible = r.bottom > 0 && r.top < viewportHeight;
-	}
-
-	_injectBaseStyles() {
-		if (ScrollProgress._styleInjected) return;
+	#injectBaseStyles() {
+		if (ScrollProgress.#styleInjected) return;
 		const tag = document.createElement('style');
 		tag.textContent = `
 scroll-progress {
@@ -382,10 +392,9 @@ scroll-progress {
 	backface-visibility: hidden;
 }`;
 		document.head.appendChild(tag);
-		ScrollProgress._styleInjected = true;
+		ScrollProgress.#styleInjected = true;
 	}
 }
-ScrollProgress._styleInjected = false;
 
 // define the element
 if (!window.customElements.get('scroll-progress')) {

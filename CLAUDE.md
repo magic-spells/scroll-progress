@@ -29,7 +29,7 @@ This is a **vanilla Web Component** library that creates a `<scroll-progress>` c
 - **CSS Variable API**: Exposes `--scroll-progress` (0-1) for animations
 
 ### Key Design Patterns
-- **Private fields**: Uses `#` private fields for internal state management
+- **Hybrid privacy**: `#` private fields for internal state, `_` prefix for methods accessed by ScrollProgressManager
 - **Observer pattern**: `IntersectionObserver` for visibility, `ResizeObserver` for element changes
 - **Caching strategy**: Pre-calculates positions to minimize DOM reads during scroll
 - **RAF loop**: Continuous update loop only when element is visible
@@ -38,7 +38,7 @@ This is a **vanilla Web Component** library that creates a `<scroll-progress>` c
 ### Build System
 - **Vite-based**: Two-format builds (ESM, UMD minified)
 - **Development mode**: Vite dev server serves source directly at localhost:3001
-- **No transpilation**: Modern browser targets, ES2022 syntax
+- **No transpilation**: Modern browser targets
 
 ### File Structure
 - `src/scroll-progress.js` - Main component implementation
