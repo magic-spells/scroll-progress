@@ -5,18 +5,6 @@
   uses #private fields for internal state, _ prefix for manager-facing methods
 */
 
-// throttle helper: limits how often a function can run
-function throttle(fn, wait) {
-	let lastTime = 0;
-	return function (...args) {
-		const now = Date.now();
-		if (now - lastTime >= wait) {
-			lastTime = now;
-			fn.apply(this, args);
-		}
-	};
-}
-
 // clamp helper: keeps a number within a range
 function clamp(value, min, max) {
 	return Math.max(min, Math.min(max, value));
@@ -72,10 +60,12 @@ const ScrollProgressManager = {
 	rafId: null,
 	isListening: false,
 	smoothing: 0.15,
-	friction: 0.8,
-	attraction: 0.95,
+	decay: 0.76, // friction (0.8) * attraction (0.95) combined
 	velocityThreshold: 0.01,
 	maxVelocity: 100,
+	_boundRaf: null,
+	_boundScroll: null,
+	_boundResize: null,
 
 	register(element) {
 		this.elements.add(element);
@@ -94,19 +84,21 @@ const ScrollProgressManager = {
 		ViewportMetrics.init();
 		ViewportMetrics.refresh();
 		this.lastScrollY = window.scrollY;
-		this._boundScroll = this.onScroll.bind(this);
-		this._boundViewportResize = this.onViewportResize.bind(this);
+		// bind once, reuse
+		this._boundRaf = this._boundRaf || this.onRaf.bind(this);
+		this._boundScroll = this._boundScroll || this.onScroll.bind(this);
+		this._boundResize = this._boundResize || this.onViewportResize.bind(this);
 		window.addEventListener('scroll', this._boundScroll, { passive: true });
-		window.addEventListener('resize', this._boundViewportResize, { passive: true });
-		window.visualViewport?.addEventListener('resize', this._boundViewportResize, { passive: true });
+		window.addEventListener('resize', this._boundResize, { passive: true });
+		window.visualViewport?.addEventListener('resize', this._boundResize, { passive: true });
 		this.isListening = true;
-		this.rafId = requestAnimationFrame(this.onRaf.bind(this));
+		this.rafId = requestAnimationFrame(this._boundRaf);
 	},
 
 	stop() {
 		window.removeEventListener('scroll', this._boundScroll);
-		window.removeEventListener('resize', this._boundViewportResize);
-		window.visualViewport?.removeEventListener('resize', this._boundViewportResize);
+		window.removeEventListener('resize', this._boundResize);
+		window.visualViewport?.removeEventListener('resize', this._boundResize);
 		this.isListening = false;
 		this.velocity = 0;
 		if (this.rafId) cancelAnimationFrame(this.rafId);
@@ -118,7 +110,6 @@ const ScrollProgressManager = {
 		const delta = y - this.lastScrollY;
 		this.lastScrollY = y;
 
-		// respects prefers-reduced-motion
 		if (reducedMotion.matches) {
 			this.velocity = 0;
 			this.tick();
@@ -131,46 +122,43 @@ const ScrollProgressManager = {
 	},
 
 	onViewportResize() {
-		ViewportMetrics.refresh();
+		ViewportMetrics.refresh(); // refresh once for all elements
 		this.lastScrollY = window.scrollY;
 		for (const el of this.elements) {
-			el._buildCache();
-			el._updateVisibilityFallback();
+			el._buildCache(true);
+			el._updateVisibilityFallback(true);
 		}
 		this.tick();
 	},
 
 	tick() {
-		// schedule a rAF tick if not already running
-		if (!this.rafId) this.rafId = requestAnimationFrame(this.onRaf.bind(this));
+		if (!this.rafId) this.rafId = requestAnimationFrame(this._boundRaf);
 	},
 
 	onRaf() {
 		this.rafId = null;
 
-		// simulate velocity physics
+		// velocity physics — single multiply instead of two
 		if (!reducedMotion.matches) {
-			this.velocity *= this.friction;
-			this.velocity *= this.attraction;
+			this.velocity *= this.decay;
 			if (Math.abs(this.velocity) < this.velocityThreshold) this.velocity = 0;
 		} else {
 			this.velocity = 0;
 		}
-		let needsAnotherTick = false;
+
+		const vel = this.velocity;
 
 		// update all registered, visible, unpaused elements
 		for (const el of this.elements) {
 			if (!el._intersectionObserver) el._updateVisibilityFallback();
 			if (!el._visible || el._paused) continue;
-			el._receiveVelocity(this.velocity);
+			el._receiveVelocity(vel);
 			el._tickProgress();
-			// if velocity still exists, keep ticking
-			if (Math.abs(this.velocity) > 0) needsAnotherTick = true;
 		}
 
-		// keep running while moving or after scroll
-		if (needsAnotherTick || Math.abs(this.velocity) > 0) {
-			this.rafId = requestAnimationFrame(this.onRaf.bind(this));
+		// keep running while velocity is non-zero
+		if (vel !== 0) {
+			this.rafId = requestAnimationFrame(this._boundRaf);
 		}
 	},
 };
@@ -181,7 +169,6 @@ class ScrollProgress extends HTMLElement {
 	#cache = null;
 	#lastProgress = -1;
 	#lastVelocity = 0;
-	#resizeHandler = null;
 	#resizeObserver = null;
 	static #styleInjected = false;
 
@@ -209,7 +196,6 @@ class ScrollProgress extends HTMLElement {
 		ViewportMetrics.init();
 		_._buildCache();
 		_.#setupObservers();
-		_.#attachResizeListener();
 		_._updateVisibilityFallback();
 		_._tickProgress();
 		ScrollProgressManager.register(_);
@@ -218,7 +204,6 @@ class ScrollProgress extends HTMLElement {
 	disconnectedCallback() {
 		const _ = this;
 		_.#removeObservers();
-		_.#removeResizeListener();
 		ScrollProgressManager.unregister(_);
 	}
 
@@ -292,7 +277,7 @@ class ScrollProgress extends HTMLElement {
 		}
 	}
 
-	_buildCache() {
+	_buildCache(skipRefresh) {
 		const _ = this;
 		const es = _.getAttribute('playhead-element-start') || 'top';
 		const vs = _.getAttribute('playhead-viewport-start') || 'bottom';
@@ -300,7 +285,7 @@ class ScrollProgress extends HTMLElement {
 		const ve = _.getAttribute('playhead-viewport-end') || 'top';
 
 		const rect = _.getBoundingClientRect();
-		const vh = ViewportMetrics.refresh().stableHeight;
+		const vh = skipRefresh ? ViewportMetrics.stableHeight : ViewportMetrics.refresh().stableHeight;
 
 		const elOffset = (a, r) => (a === 'top' ? 0 : a === 'center' ? r.height / 2 : r.height);
 		const vpOffset = (a, h) => (a === 'top' ? 0 : a === 'center' ? h / 2 : h);
@@ -313,9 +298,9 @@ class ScrollProgress extends HTMLElement {
 		_.#cache = { startTop, endTop, distance: startTop - endTop };
 	}
 
-	_updateVisibilityFallback() {
+	_updateVisibilityFallback(skipRefresh) {
 		const _ = this;
-		const viewportHeight = ViewportMetrics.refresh().currentHeight;
+		const viewportHeight = skipRefresh ? ViewportMetrics.currentHeight : ViewportMetrics.refresh().currentHeight;
 		const r = _.getBoundingClientRect();
 		_._visible = r.bottom > 0 && r.top < viewportHeight;
 	}
@@ -360,23 +345,6 @@ class ScrollProgress extends HTMLElement {
 		if (_.#resizeObserver) {
 			_.#resizeObserver.disconnect();
 			_.#resizeObserver = null;
-		}
-	}
-
-	#attachResizeListener() {
-		const _ = this;
-		_.#resizeHandler = throttle(() => {
-			_._buildCache();
-			if (_._visible) ScrollProgressManager.tick();
-		}, 50);
-		window.addEventListener('resize', _.#resizeHandler);
-	}
-
-	#removeResizeListener() {
-		const _ = this;
-		if (_.#resizeHandler) {
-			window.removeEventListener('resize', _.#resizeHandler);
-			_.#resizeHandler = null;
 		}
 	}
 
