@@ -494,29 +494,6 @@
       z-index: 10;
     }
 
-    /* ---- DEMO 5: Pin — The Zoom ---- */
-    .zoom-element {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 120px;
-      height: 120px;
-      z-index: 5;
-      transform: translate(-50%, -50%) scale(calc(0.3 + var(--scroll-progress) * 2));
-      border-radius: calc(60px - var(--scroll-progress) * 48px);
-      background: linear-gradient(135deg, var(--rose), var(--coral));
-      box-shadow: 0 0 calc(var(--scroll-progress) * 80px) rgba(251, 44, 94, 0.3);
-      filter: blur(calc((1 - var(--scroll-progress)) * 8px));
-    }
-
-    .zoom-element::after {
-      content: '';
-      position: absolute;
-      inset: 3px;
-      border-radius: inherit;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
     /* ---- DEMO 6: Reversed ---- */
     .reversed-demo .layer {
       transform: translate3d(
@@ -642,6 +619,114 @@
       opacity: calc(0.2 + var(--scroll-progress) * 0.8);
       z-index: 10;
       pointer-events: none;
+    }
+
+    /* ---- DEMO: Mountain Landscape ---- */
+    .mountain-demo {
+      height: 900px;
+      overflow: hidden;
+    }
+
+    .sky-sunset {
+      position: absolute;
+      inset: 0;
+      border-radius: 16px;
+      z-index: 0;
+      background: linear-gradient(to bottom,
+        #5b8fb8 0%,
+        #8fb5c9 15%,
+        #d4a574 35%,
+        #e8944a 50%,
+        #d4613a 65%,
+        #a83a28 80%,
+        #6b1e14 100%
+      );
+    }
+
+    .sky-night {
+      position: absolute;
+      inset: 0;
+      border-radius: 16px;
+      z-index: 1;
+      background: linear-gradient(to bottom,
+        #020810 0%,
+        #06102a 20%,
+        #0c1a3a 40%,
+        #10203e 60%,
+        #0e1830 100%
+      );
+      opacity: var(--scroll-progress);
+    }
+
+    .celestial {
+      position: absolute;
+      top: calc(12% + var(--scroll-progress) * 8%);
+      left: 30%;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      z-index: 2;
+      background: oklch(
+        calc(0.92 - var(--scroll-progress) * 0.15)
+        calc(0.14 - var(--scroll-progress) * 0.12)
+        calc(75 + var(--scroll-progress) * 180)
+      );
+      box-shadow:
+        0 0 40px oklch(calc(0.8 - var(--scroll-progress) * 0.3) calc(0.14 - var(--scroll-progress) * 0.11) calc(75 + var(--scroll-progress) * 180) / 0.6),
+        0 0 100px oklch(calc(0.7 - var(--scroll-progress) * 0.3) calc(0.1 - var(--scroll-progress) * 0.08) calc(75 + var(--scroll-progress) * 180) / 0.3);
+    }
+
+    .mtn-layer {
+      position: absolute;
+      bottom: var(--mtn-bottom, 0px);
+      left: -2%;
+      width: 104%;
+      will-change: transform;
+      transform: translateY(calc(var(--scroll-progress) * var(--mtn-drift, 0px)));
+    }
+
+    .mtn-layer svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .mountain-star {
+      position: absolute;
+      border-radius: 50%;
+      background: #fff;
+      z-index: 2;
+      opacity: clamp(0, calc((var(--scroll-progress) - 0.35) * 3), var(--star-max, 0.8));
+    }
+
+    .mountain-star-warm {
+      background: #ffe8c0;
+    }
+
+    .mountain-star-blue {
+      background: #c0d8ff;
+    }
+
+    /* ---- DEMO: Smoke Dissolve ---- */
+    .smoke-demo {
+      height: 600px;
+      background: #000;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .smoke-filter-wrap {
+      position: absolute;
+      inset: 0;
+      filter: url(#smoke-filter);
+    }
+
+    .smoke-image {
+      position: absolute;
+      inset: 0;
+      border-radius: 16px;
+      background: url('carina-nebula.jpg') center / cover no-repeat;
+      transform: scale(1);
     }
 
     /* ---- DEMO 8: Velocity ---- */
@@ -853,6 +938,78 @@
       </scroll-progress>
     </section>
 
+    <!-- MOUNTAIN LANDSCAPE -->
+    <section class="demo-card">
+      <h2>Sunset to Starlight</h2>
+      <p class="desc">Sky transitions from golden hour to deep night. Mountain layers separate with parallax depth. Stars emerge in the second half.</p>
+      <p class="settings">default playhead (bottom → top)</p>
+      <scroll-progress class="demo-stage mountain-demo">
+        <!-- sky layers -->
+        <div class="sky-sunset"></div>
+        <div class="sky-night"></div>
+
+        <!-- sun → moon -->
+        <div class="celestial"></div>
+
+        <!-- stars — fade in after 35% progress -->
+        <div class="mountain-star" style="width: 2px; height: 2px; top: 6%; left: 15%; --star-max: 0.5"></div>
+        <div class="mountain-star mountain-star-warm" style="width: 3px; height: 3px; top: 10%; left: 52%; --star-max: 0.9"></div>
+        <div class="mountain-star" style="width: 2px; height: 2px; top: 4%; left: 70%; --star-max: 0.4"></div>
+        <div class="mountain-star mountain-star-blue" style="width: 2px; height: 2px; top: 14%; left: 85%; --star-max: 0.6"></div>
+        <div class="mountain-star" style="width: 1px; height: 1px; top: 8%; left: 38%; --star-max: 0.35"></div>
+        <div class="mountain-star mountain-star-warm" style="width: 2px; height: 2px; top: 18%; left: 10%; --star-max: 0.5"></div>
+        <div class="mountain-star" style="width: 3px; height: 3px; top: 3%; left: 45%; --star-max: 1"></div>
+        <div class="mountain-star mountain-star-blue" style="width: 2px; height: 2px; top: 12%; left: 62%; --star-max: 0.7"></div>
+        <div class="mountain-star" style="width: 1px; height: 1px; top: 7%; left: 78%; --star-max: 0.3"></div>
+        <div class="mountain-star" style="width: 2px; height: 2px; top: 16%; left: 28%; --star-max: 0.55"></div>
+        <div class="mountain-star mountain-star-warm" style="width: 2px; height: 2px; top: 5%; left: 92%; --star-max: 0.6"></div>
+        <div class="mountain-star" style="width: 1px; height: 1px; top: 20%; left: 48%; --star-max: 0.35"></div>
+        <div class="mountain-star mountain-star-blue" style="width: 3px; height: 3px; top: 9%; left: 22%; --star-max: 0.85"></div>
+        <div class="mountain-star" style="width: 2px; height: 2px; top: 2%; left: 58%; --star-max: 0.45"></div>
+        <div class="mountain-star" style="width: 1px; height: 1px; top: 15%; left: 75%; --star-max: 0.3"></div>
+        <div class="mountain-star mountain-star-warm" style="width: 2px; height: 2px; top: 11%; left: 5%; --star-max: 0.5"></div>
+        <div class="mountain-star" style="width: 2px; height: 2px; top: 22%; left: 40%; --star-max: 0.45"></div>
+        <div class="mountain-star mountain-star-blue" style="width: 1px; height: 1px; top: 6%; left: 33%; --star-max: 0.4"></div>
+        <div class="mountain-star" style="width: 2px; height: 2px; top: 19%; left: 88%; --star-max: 0.55"></div>
+        <div class="mountain-star mountain-star-warm" style="width: 3px; height: 3px; top: 1%; left: 82%; --star-max: 0.9"></div>
+
+        <!-- mountain layer 1 — distant, lightest -->
+        <div class="mtn-layer" style="z-index: 3; --mtn-drift: -15px; --mtn-bottom: 0px; height: 70%;">
+          <svg viewBox="0 0 1000 600" preserveAspectRatio="none" style="height: 100%;">
+            <path d="M0,340 L40,310 L90,320 L140,280 L200,300 L260,250 L310,275 L370,240 L430,270 L490,230 L550,260 L610,240 L670,270 L730,235 L790,260 L850,245 L920,275 L1000,250 L1000,600 L0,600 Z" fill="#546e8a"/>
+          </svg>
+        </div>
+
+        <!-- mountain layer 2 -->
+        <div class="mtn-layer" style="z-index: 4; --mtn-drift: -40px; --mtn-bottom: -30px; height: 63%;">
+          <svg viewBox="0 0 1000 600" preserveAspectRatio="none" style="height: 100%;">
+            <path d="M0,350 L50,310 L100,280 L160,310 L220,240 L280,280 L340,220 L400,270 L460,235 L520,275 L580,210 L640,255 L700,230 L760,270 L820,200 L880,250 L940,235 L1000,270 L1000,600 L0,600 Z" fill="#3d5470"/>
+          </svg>
+        </div>
+
+        <!-- mountain layer 3 — dramatic peaks -->
+        <div class="mtn-layer" style="z-index: 5; --mtn-drift: -70px; --mtn-bottom: -70px; height: 45%;">
+          <svg viewBox="0 0 1000 600" preserveAspectRatio="none" style="height: 100%;">
+            <path d="M0,360 L60,320 L110,280 L150,310 L200,230 L250,275 L300,195 L350,250 L410,220 L460,270 L520,180 L570,235 L630,200 L690,260 L750,175 L810,230 L870,210 L930,260 L1000,230 L1000,600 L0,600 Z" fill="#2a3a52"/>
+          </svg>
+        </div>
+
+        <!-- mountain layer 4 — near -->
+        <div class="mtn-layer" style="z-index: 6; --mtn-drift: -110px; --mtn-bottom: -120px; height: 38%;">
+          <svg viewBox="0 0 1000 600" preserveAspectRatio="none" style="height: 100%;">
+            <path d="M0,370 L40,340 L90,300 L140,330 L190,260 L250,310 L310,230 L370,290 L420,265 L480,310 L540,240 L600,285 L660,250 L720,300 L780,220 L840,275 L900,255 L960,295 L1000,270 L1000,600 L0,600 Z" fill="#1a2438"/>
+          </svg>
+        </div>
+
+        <!-- mountain layer 5 — foreground, darkest, extra tall to cover everything -->
+        <div class="mtn-layer" style="z-index: 7; --mtn-drift: -160px; --mtn-bottom: -210px; height: 30%;">
+          <svg viewBox="0 0 1000 800" preserveAspectRatio="none" style="height: 100%;">
+            <path d="M0,300 L80,270 L150,230 L220,260 L300,200 L380,240 L460,210 L540,250 L620,220 L700,250 L780,200 L860,235 L940,215 L1000,245 L1000,800 L0,800 Z" fill="#0d1420"/>
+          </svg>
+        </div>
+      </scroll-progress>
+    </section>
+
     <!-- 04 CENTERED — Hue Orbit -->
     <section class="demo-card">
       <h2>Centered Playhead</h2>
@@ -875,24 +1032,31 @@
       </scroll-progress>
     </section>
 
-    <!-- 05 PIN — The Zoom -->
+    <!-- SMOKE DISSOLVE -->
     <section class="demo-card">
-      <h2>Pin (Sticky)</h2>
-      <p class="desc">Tracked from the top of the viewport. The element zooms from a blurred dot to a sharp, full-size shape as you scroll through.</p>
+      <h2>Smoke Dissolve</h2>
+      <p class="desc">An image emerges from turbulent smoke as it scrolls toward center. SVG feTurbulence + feDisplacementMap clear as progress reaches 1.</p>
       <p class="settings">
-        playhead-viewport-start="top"<br />
-        playhead-viewport-end="top"<br />
-        playhead-element-start="top"<br />
-        playhead-element-end="bottom"
+        playhead-viewport-start="bottom"<br />
+        playhead-viewport-end="center"<br />
+        playhead-element-start="bottom"<br />
+        playhead-element-end="center"
       </p>
       <scroll-progress
-        playhead-element-start="top"
-        playhead-viewport-start="top"
-        playhead-element-end="bottom"
-        playhead-viewport-end="top"
-        class="demo-stage">
-        <div class="stage-bg" style="background: radial-gradient(ellipse at center, #140a0f 0%, #07060b 100%)"></div>
-        <div class="zoom-element"></div>
+        playhead-viewport-start="bottom"
+        playhead-viewport-end="center"
+        playhead-element-start="bottom"
+        playhead-element-end="center"
+        class="demo-stage smoke-demo">
+        <svg width="0" height="0">
+          <filter id="smoke-filter">
+            <feTurbulence id="smoke-turb" type="fractalNoise" baseFrequency="0.03" numOctaves="20" />
+            <feDisplacementMap id="smoke-disp" in="SourceGraphic" scale="0" />
+          </filter>
+        </svg>
+        <div class="smoke-filter-wrap">
+          <div class="smoke-image"></div>
+        </div>
       </scroll-progress>
     </section>
 
@@ -1032,5 +1196,29 @@
   <div class="bottom-spacer"></div>
 
   <script type="module" src="../src/scroll-progress.js"></script>
+  <script>
+    (function () {
+      const turb = document.getElementById('smoke-turb');
+      const disp = document.getElementById('smoke-disp');
+      const el = document.querySelector('.smoke-demo');
+      if (!turb || !disp || !el) return;
+
+      let frames = 0;
+      const rad = Math.PI / 180;
+
+      function tick() {
+        frames += 0.2;
+        const bfx = 0.03 + 0.005 * Math.cos(frames * rad);
+        const bfy = 0.03 + 0.005 * Math.sin(frames * rad);
+        turb.setAttribute('baseFrequency', bfx + ' ' + bfy);
+
+        const p = parseFloat(getComputedStyle(el).getPropertyValue('--scroll-progress')) || 0;
+        disp.setAttribute('scale', (1 - p) * 150);
+
+        requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    })();
+  </script>
 </body>
 </html>

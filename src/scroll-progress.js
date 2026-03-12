@@ -25,6 +25,45 @@ function clamp(value, min, max) {
 // cached media query for prefers-reduced-motion
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
+// stable viewport metrics prevent mobile Safari chrome from shifting anchor math
+const ViewportMetrics = {
+	currentHeight: window.visualViewport?.height || window.innerHeight,
+	stableHeight: window.visualViewport?.height || window.innerHeight,
+	probe: null,
+
+	init() {
+		if (this.probe || !window.CSS || !window.CSS.supports('height: 100svh')) return;
+		const container = document.createElement('div');
+		const probe = document.createElement('div');
+		container.setAttribute('aria-hidden', 'true');
+		container.style.cssText = `
+position: fixed;
+top: 0;
+left: 0;
+width: 0;
+height: 0;
+overflow: hidden;
+visibility: hidden;
+pointer-events: none;
+z-index: -1;`;
+		probe.style.height = '100svh';
+		container.appendChild(probe);
+		document.documentElement.appendChild(container);
+		this.probe = probe;
+		this.refresh();
+	},
+
+	refresh() {
+		const currentHeight = window.visualViewport?.height || window.innerHeight;
+		const measuredStableHeight = this.probe ? this.probe.getBoundingClientRect().height : 0;
+
+		this.currentHeight = currentHeight;
+		this.stableHeight = measuredStableHeight || currentHeight;
+
+		return this;
+	},
+};
+
 // main global scroll + velocity manager
 const ScrollProgressManager = {
 	elements: new Set(),
@@ -52,15 +91,22 @@ const ScrollProgressManager = {
 
 	start() {
 		if (this.isListening) return;
+		ViewportMetrics.init();
+		ViewportMetrics.refresh();
 		this.lastScrollY = window.scrollY;
 		this._boundScroll = this.onScroll.bind(this);
+		this._boundViewportResize = this.onViewportResize.bind(this);
 		window.addEventListener('scroll', this._boundScroll, { passive: true });
+		window.addEventListener('resize', this._boundViewportResize, { passive: true });
+		window.visualViewport?.addEventListener('resize', this._boundViewportResize, { passive: true });
 		this.isListening = true;
 		this.rafId = requestAnimationFrame(this.onRaf.bind(this));
 	},
 
 	stop() {
 		window.removeEventListener('scroll', this._boundScroll);
+		window.removeEventListener('resize', this._boundViewportResize);
+		window.visualViewport?.removeEventListener('resize', this._boundViewportResize);
 		this.isListening = false;
 		this.velocity = 0;
 		if (this.rafId) cancelAnimationFrame(this.rafId);
@@ -84,6 +130,16 @@ const ScrollProgressManager = {
 		this.tick();
 	},
 
+	onViewportResize() {
+		ViewportMetrics.refresh();
+		this.lastScrollY = window.scrollY;
+		for (const el of this.elements) {
+			el._buildCache();
+			el._updateVisibilityFallback();
+		}
+		this.tick();
+	},
+
 	tick() {
 		// schedule a rAF tick if not already running
 		if (!this.rafId) this.rafId = requestAnimationFrame(this.onRaf.bind(this));
@@ -100,8 +156,6 @@ const ScrollProgressManager = {
 		} else {
 			this.velocity = 0;
 		}
-
-		const viewportHeight = window.innerHeight;
 		let needsAnotherTick = false;
 
 		// update all registered, visible, unpaused elements
@@ -109,7 +163,7 @@ const ScrollProgressManager = {
 			if (!el._intersectionObserver) el._updateVisibilityFallback();
 			if (!el._visible || el._paused) continue;
 			el._receiveVelocity(this.velocity);
-			el._tickProgress(viewportHeight);
+			el._tickProgress();
 			// if velocity still exists, keep ticking
 			if (Math.abs(this.velocity) > 0) needsAnotherTick = true;
 		}
@@ -146,11 +200,12 @@ class ScrollProgress extends HTMLElement {
 	}
 
 	connectedCallback() {
+		ViewportMetrics.init();
 		this._buildCache();
 		this._setupObservers();
 		this._attachResizeListener();
 		this._updateVisibilityFallback();
-		this._tickProgress(window.innerHeight);
+		this._tickProgress();
 		ScrollProgressManager.register(this);
 	}
 
@@ -209,7 +264,7 @@ class ScrollProgress extends HTMLElement {
 		);
 	}
 
-	_tickProgress(viewportHeight) {
+	_tickProgress() {
 		if (!this._cache) return;
 		const rect = this.getBoundingClientRect();
 
@@ -236,7 +291,7 @@ class ScrollProgress extends HTMLElement {
 		const ve = this.getAttribute('playhead-viewport-end') || 'top';
 
 		const rect = this.getBoundingClientRect();
-		const vh = window.innerHeight;
+		const vh = ViewportMetrics.refresh().stableHeight;
 
 		const elOffset = (a, r) => (a === 'top' ? 0 : a === 'center' ? r.height / 2 : r.height);
 		const vpOffset = (a, h) => (a === 'top' ? 0 : a === 'center' ? h / 2 : h);
@@ -310,8 +365,9 @@ class ScrollProgress extends HTMLElement {
 	}
 
 	_updateVisibilityFallback() {
+		const viewportHeight = ViewportMetrics.refresh().currentHeight;
 		const r = this.getBoundingClientRect();
-		this._visible = r.bottom > 0 && r.top < window.innerHeight;
+		this._visible = r.bottom > 0 && r.top < viewportHeight;
 	}
 
 	_injectBaseStyles() {
