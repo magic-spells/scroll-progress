@@ -98,9 +98,16 @@
       border: 1px solid var(--border-accent);
       padding: 0.4em 1.4em;
       border-radius: 100px;
+      text-decoration: none;
+      transition: border-color 0.3s ease, color 0.3s ease;
       margin-bottom: 2.5rem;
       opacity: 0;
       animation: fadeUp 0.8s ease forwards 0.2s;
+    }
+
+    .hero-badge:hover {
+      border-color: var(--gold-dim);
+      color: var(--cream);
     }
 
     .hero h1 {
@@ -137,6 +144,151 @@
       opacity: 0;
       animation: fadeUp 1s ease forwards 0.85s;
     }
+
+    /* ---- Install banner ---- */
+    .install-banner {
+      display: flex;
+      justify-content: center;
+      gap: 2.5rem;
+      flex-wrap: wrap;
+      margin: 0 auto 3.5rem;
+      max-width: 680px;
+      padding: 0 1.5rem;
+      opacity: 0;
+      animation: fadeUp 1s ease forwards 0.9s;
+    }
+
+    .install-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .install-label {
+      font-family: var(--font-body);
+      font-size: 0.65rem;
+      font-weight: 400;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    .install-value {
+      font-family: 'Courier New', monospace;
+      font-size: 0.88rem;
+      color: var(--cream);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.5em 1.2em;
+      user-select: all;
+      cursor: copy;
+      transition: border-color 0.3s ease;
+    }
+
+    .install-value:hover {
+      border-color: var(--gold-dim);
+    }
+
+    .install-size {
+      font-family: 'Courier New', monospace;
+      font-size: 0.88rem;
+      color: var(--gold);
+      padding: 0.5em 0;
+    }
+
+    /* ---- Code example ---- */
+    .code-example {
+      max-width: 1100px;
+      margin: 0 auto 3rem;
+      padding: 0 1.5rem;
+    }
+
+    .code-card {
+      position: relative;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2.5rem;
+      overflow: hidden;
+    }
+
+    .code-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+      opacity: 0.4;
+    }
+
+    .code-card h2 {
+      font-family: var(--font-display);
+      font-weight: 400;
+      font-size: 1.8rem;
+      color: var(--cream);
+      letter-spacing: -0.01em;
+      margin-bottom: 0.5rem;
+    }
+
+    .code-card .code-desc {
+      font-size: 1rem;
+      color: var(--text-dim);
+      line-height: 1.6;
+      margin-bottom: 1.75rem;
+      max-width: 560px;
+    }
+
+    .code-blocks {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+
+    .code-block {
+      position: relative;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .code-block-label {
+      display: block;
+      font-family: var(--font-body);
+      font-size: 0.65rem;
+      font-weight: 400;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      padding: 0.75rem 1.25rem 0;
+    }
+
+    .code-block pre {
+      margin: 0;
+      padding: 0.75rem 1.25rem 1.25rem;
+      overflow-x: auto;
+    }
+
+    .code-block code {
+      font-family: 'Courier New', monospace;
+      font-size: 0.78rem;
+      line-height: 1.7;
+      color: var(--cream-dim);
+      white-space: pre;
+    }
+
+    /* Syntax highlights */
+    .code-block code .kw  { color: #c9a84c; }
+    .code-block code .fn  { color: #e8c96a; }
+    .code-block code .str { color: #00b894; }
+    .code-block code .tag { color: #c9a84c; }
+    .code-block code .attr { color: var(--cream-dim); }
+    .code-block code .val { color: #00b894; }
+    .code-block code .cm  { color: var(--text-dim); }
 
     /* ---- Demo container ---- */
     .demos {
@@ -762,6 +914,9 @@
       .demo-stage-tall { height: 500px; }
       .orbit-ring { width: 140px; height: 140px; }
       .zoom-element { width: 80px; height: 80px; }
+      .code-blocks { grid-template-columns: 1fr; }
+      .code-card { padding: 1.5rem; }
+      .install-banner { gap: 1.5rem; }
     }
   </style>
 </head>
@@ -772,11 +927,68 @@
 
   <!-- ======== HERO ======== -->
   <header class="hero">
-    <div class="hero-badge">@magic-spells</div>
+    <a class="hero-badge" href="https://github.com/magic-spells/scroll-progress" target="_blank" rel="noopener">@magic-spells/scroll-progress</a>
     <h1>Scroll<br /><em>Progress</em></h1>
     <p>High-performance scroll tracking via CSS custom properties. Configurable playhead anchors, velocity physics, and GPU-accelerated animations — no scroll event listeners.</p>
     <div class="hero-line"></div>
   </header>
+
+  <!-- ======== INSTALL ======== -->
+  <div class="install-banner">
+    <div class="install-item">
+      <span class="install-label">Install</span>
+      <code class="install-value">npm i @magic-spells/scroll-progress</code>
+    </div>
+    <div class="install-item">
+      <span class="install-label">Size (gzip)</span>
+      <span class="install-size">~2.2 KB</span>
+    </div>
+  </div>
+
+  <!-- ======== CODE EXAMPLE ======== -->
+  <div class="code-example">
+    <div class="code-card">
+      <h2>Quick Start</h2>
+      <p class="code-desc">Import the component, wrap your content, and animate with the <code style="color:var(--gold);font-size:0.85em;">--scroll-progress</code> CSS variable.</p>
+      <div class="code-blocks">
+        <div class="code-block">
+          <span class="code-block-label">HTML</span>
+          <pre><code><span class="tag">&lt;script</span> <span class="attr">type</span>=<span class="val">"module"</span> <span class="attr">src</span>=<span class="val">"scroll-progress.js"</span><span class="tag">&gt;&lt;/script&gt;</span>
+
+<span class="tag">&lt;scroll-progress</span>
+  <span class="attr">playhead-element-start</span>=<span class="val">"top"</span>
+  <span class="attr">playhead-element-end</span>=<span class="val">"bottom"</span>
+  <span class="attr">playhead-viewport-start</span>=<span class="val">"bottom"</span>
+  <span class="attr">playhead-viewport-end</span>=<span class="val">"top"</span><span class="tag">&gt;</span>
+
+  <span class="tag">&lt;div</span> <span class="attr">style</span>=<span class="val">"opacity: var(--scroll-progress)"</span><span class="tag">&gt;</span>
+    Fades in as you scroll
+  <span class="tag">&lt;/div&gt;</span>
+
+<span class="tag">&lt;/scroll-progress&gt;</span></code></pre>
+        </div>
+        <div class="code-block">
+          <span class="code-block-label">JavaScript</span>
+          <pre><code><span class="kw">const</span> el = document.<span class="fn">querySelector</span>(<span class="str">'scroll-progress'</span>)
+
+<span class="cm">// Read current progress (0–1)</span>
+el.<span class="fn">getProgress</span>()
+
+<span class="cm">// Read current velocity</span>
+el.<span class="fn">getVelocity</span>()
+
+<span class="cm">// Listen for changes</span>
+el.<span class="fn">addEventListener</span>(<span class="str">'scroll-progress:update'</span>, e <span class="kw">=&gt;</span> {
+  console.<span class="fn">log</span>(e.detail.progress)
+})
+
+<span class="cm">// Pause / resume the RAF loop</span>
+el.<span class="fn">pause</span>()
+el.<span class="fn">resume</span>()</code></pre>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- ======== EXPLAINER ======== -->
   <section class="explainer">
@@ -1163,6 +1375,21 @@
       }
       requestAnimationFrame(tick);
     })();
+  </script>
+  <script>
+    // Copy install command to clipboard
+    var installValue = document.querySelector('.install-value')
+    if (installValue) {
+      installValue.addEventListener('click', function () {
+        navigator.clipboard.writeText(this.textContent.trim()).then(function () {
+          var original = installValue.textContent
+          installValue.textContent = 'Copied!'
+          setTimeout(function () {
+            installValue.textContent = original
+          }, 1500)
+        })
+      })
+    }
   </script>
 </body>
 </html>
