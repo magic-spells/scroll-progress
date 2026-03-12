@@ -122,11 +122,15 @@ const ScrollProgressManager = {
 	},
 
 	onViewportResize() {
-		ViewportMetrics.refresh(); // refresh once for all elements
+		const metrics = ViewportMetrics.refresh();
 		this.lastScrollY = window.scrollY;
 		for (const el of this.elements) {
-			el._buildCache(true);
-			el._updateVisibilityFallback(true);
+			const rect = el.getBoundingClientRect();
+			el._buildCache({ rect, stableHeight: metrics.stableHeight });
+			el._updateVisibilityFallback({
+				rect,
+				currentHeight: metrics.currentHeight,
+			});
 		}
 		this.tick();
 	},
@@ -147,10 +151,16 @@ const ScrollProgressManager = {
 		}
 
 		const vel = this.velocity;
+		let fallbackViewportHeight = null;
 
 		// update all registered, visible, unpaused elements
 		for (const el of this.elements) {
-			if (!el._intersectionObserver) el._updateVisibilityFallback();
+			if (!el._intersectionObserver) {
+				fallbackViewportHeight ??= ViewportMetrics.refresh().currentHeight;
+				el._updateVisibilityFallback({
+					currentHeight: fallbackViewportHeight,
+				});
+			}
 			if (!el._visible || el._paused) continue;
 			el._receiveVelocity(vel);
 			el._tickProgress();
@@ -194,6 +204,7 @@ class ScrollProgress extends HTMLElement {
 	connectedCallback() {
 		const _ = this;
 		ViewportMetrics.init();
+		ViewportMetrics.refresh();
 		_._buildCache();
 		_.#setupObservers();
 		_._updateVisibilityFallback();
@@ -208,6 +219,7 @@ class ScrollProgress extends HTMLElement {
 	}
 
 	attributeChangedCallback() {
+		ViewportMetrics.refresh();
 		this._buildCache();
 		ScrollProgressManager.tick();
 	}
@@ -223,6 +235,7 @@ class ScrollProgress extends HTMLElement {
 	}
 
 	update() {
+		ViewportMetrics.refresh();
 		this._buildCache();
 		this._updateVisibilityFallback();
 		ScrollProgressManager.tick();
@@ -277,32 +290,30 @@ class ScrollProgress extends HTMLElement {
 		}
 	}
 
-	_buildCache(skipRefresh) {
+	_buildCache({ rect = this.getBoundingClientRect(), stableHeight = ViewportMetrics.stableHeight } = {}) {
 		const _ = this;
 		const es = _.getAttribute('playhead-element-start') || 'top';
 		const vs = _.getAttribute('playhead-viewport-start') || 'bottom';
 		const ee = _.getAttribute('playhead-element-end') || 'bottom';
 		const ve = _.getAttribute('playhead-viewport-end') || 'top';
 
-		const rect = _.getBoundingClientRect();
-		const vh = skipRefresh ? ViewportMetrics.stableHeight : ViewportMetrics.refresh().stableHeight;
-
 		const elOffset = (a, r) => (a === 'top' ? 0 : a === 'center' ? r.height / 2 : r.height);
 		const vpOffset = (a, h) => (a === 'top' ? 0 : a === 'center' ? h / 2 : h);
 
 		const startOffset = elOffset(es, rect);
 		const endOffset = elOffset(ee, rect);
-		const startTop = vpOffset(vs, vh) - startOffset;
-		const endTop = vpOffset(ve, vh) - endOffset;
+		const startTop = vpOffset(vs, stableHeight) - startOffset;
+		const endTop = vpOffset(ve, stableHeight) - endOffset;
 
 		_.#cache = { startTop, endTop, distance: startTop - endTop };
 	}
 
-	_updateVisibilityFallback(skipRefresh) {
+	_updateVisibilityFallback({
+		rect = this.getBoundingClientRect(),
+		currentHeight = ViewportMetrics.currentHeight,
+	} = {}) {
 		const _ = this;
-		const viewportHeight = skipRefresh ? ViewportMetrics.currentHeight : ViewportMetrics.refresh().currentHeight;
-		const r = _.getBoundingClientRect();
-		_._visible = r.bottom > 0 && r.top < viewportHeight;
+		_._visible = rect.bottom > 0 && rect.top < currentHeight;
 	}
 
 	// private methods (internal only)
