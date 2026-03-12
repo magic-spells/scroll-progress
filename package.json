@@ -1,6 +1,6 @@
 {
 	"name": "@magic-spells/scroll-progress",
-	"version": "0.1.0",
+	"version": "1.0.0",
 	"description": "High-performance scroll progress web component with configurable playhead anchors and optimized animations.",
 	"author": "Cory Schulz",
 	"license": "MIT",

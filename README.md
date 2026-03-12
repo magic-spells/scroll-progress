@@ -1,4 +1,4 @@
-![gzip size](https://img.shields.io/badge/gzip-1.9kb-blue)
+![gzip size](https://img.shields.io/badge/gzip-2.2kb-blue)
 
 # Scroll Progress Web Component
 
@@ -15,7 +15,7 @@ A high-performance, customizable Web Component that tracks scroll progress relat
 - 📏 **Responsive to viewport resizes** with throttled resize handling
 - 🌊 **Scroll velocity tracking** with physics simulation (friction, attraction to zero)
 - 🌐 **Framework agnostic** — works with any frontend framework or vanilla JS
-- 📦 **Lightweight & zero dependencies** - Only 1.9kb gzipped!
+- 📦 **Lightweight & zero dependencies** — only 2.2kb gzipped!
 - 🔧 **Simple API & CSS custom property exposure** for full styling control
 - ♿ **Respects `prefers-reduced-motion`** — velocity is disabled when reduced motion is preferred
 - 📱 **Mobile Safari safe** — uses `100svh` viewport probe to avoid address bar layout shifts
