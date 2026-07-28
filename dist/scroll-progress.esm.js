@@ -1,7 +1,20 @@
-function g(i, e, t) {
+function v(i, e, t) {
   return Math.max(e, Math.min(t, i));
 }
-const p = window.matchMedia("(prefers-reduced-motion: reduce)"), r = {
+const w = 5e-4, f = 0.5, _ = 64, y = { top: 0, center: 0.5, bottom: 1 };
+function u(i, e, t) {
+  if (i === null || i === "") return e;
+  const s = String(i).trim().toLowerCase(), r = y[s];
+  if (typeof r == "number") return r;
+  if (s.endsWith("%")) {
+    const n = parseFloat(s);
+    if (Number.isFinite(n)) return n / 100;
+  }
+  return console.warn(
+    `<scroll-progress> ignoring invalid ${t}="${i}" — expected top, center, bottom, or a percentage`
+  ), e;
+}
+const p = window.matchMedia("(prefers-reduced-motion: reduce)"), o = {
   currentHeight: window.visualViewport?.height || window.innerHeight,
   stableHeight: window.visualViewport?.height || window.innerHeight,
   probe: null,
@@ -23,11 +36,12 @@ z-index: -1;`, e.style.height = "100svh", i.appendChild(e), document.documentEle
     const i = window.visualViewport?.height || window.innerHeight, e = this.probe ? this.probe.getBoundingClientRect().height : 0;
     return this.currentHeight = i, this.stableHeight = e || i, this;
   }
-}, n = {
+}, l = {
   elements: /* @__PURE__ */ new Set(),
   lastScrollY: 0,
   velocity: 0,
   rafId: null,
+  lastFrameTime: 0,
   isListening: !1,
   smoothing: 0.15,
   decay: 0.76,
@@ -44,10 +58,10 @@ z-index: -1;`, e.style.height = "100svh", i.appendChild(e), document.documentEle
     this.elements.delete(i), this.elements.size === 0 && this.stop();
   },
   start() {
-    this.isListening || (r.init(), r.refresh(), this.lastScrollY = window.scrollY, this._boundRaf = this._boundRaf || this.onRaf.bind(this), this._boundScroll = this._boundScroll || this.onScroll.bind(this), this._boundResize = this._boundResize || this.onViewportResize.bind(this), window.addEventListener("scroll", this._boundScroll, { passive: !0 }), window.addEventListener("resize", this._boundResize, { passive: !0 }), window.visualViewport?.addEventListener("resize", this._boundResize, { passive: !0 }), this.isListening = !0, this.rafId = requestAnimationFrame(this._boundRaf));
+    this.isListening || (o.init(), o.refresh(), this.lastScrollY = window.scrollY, this._boundRaf = this._boundRaf || this.onRaf.bind(this), this._boundScroll = this._boundScroll || this.onScroll.bind(this), this._boundResize = this._boundResize || this.onViewportResize.bind(this), window.addEventListener("scroll", this._boundScroll, { passive: !0 }), window.addEventListener("resize", this._boundResize, { passive: !0 }), window.visualViewport?.addEventListener("resize", this._boundResize, { passive: !0 }), this.isListening = !0, this.rafId = requestAnimationFrame(this._boundRaf));
   },
   stop() {
-    window.removeEventListener("scroll", this._boundScroll), window.removeEventListener("resize", this._boundResize), window.visualViewport?.removeEventListener("resize", this._boundResize), this.isListening = !1, this.velocity = 0, this.rafId && cancelAnimationFrame(this.rafId), this.rafId = null;
+    window.removeEventListener("scroll", this._boundScroll), window.removeEventListener("resize", this._boundResize), window.visualViewport?.removeEventListener("resize", this._boundResize), this.isListening = !1, this.velocity = 0, this.lastFrameTime = 0, this.rafId && cancelAnimationFrame(this.rafId), this.rafId = null;
   },
   onScroll() {
     const i = window.scrollY, e = i - this.lastScrollY;
@@ -55,10 +69,10 @@ z-index: -1;`, e.style.height = "100svh", i.appendChild(e), document.documentEle
       this.velocity = 0, this.tick();
       return;
     }
-    this.velocity += (e - this.velocity) * this.smoothing, this.velocity = g(this.velocity, -this.maxVelocity, this.maxVelocity), this.tick();
+    this.velocity += (e - this.velocity) * this.smoothing, this.velocity = v(this.velocity, -this.maxVelocity, this.maxVelocity), this.tick();
   },
   onViewportResize() {
-    const i = r.refresh();
+    const i = o.refresh();
     this.lastScrollY = window.scrollY;
     for (const e of this.elements) {
       const t = e.getBoundingClientRect();
@@ -70,51 +84,68 @@ z-index: -1;`, e.style.height = "100svh", i.appendChild(e), document.documentEle
     this.tick();
   },
   tick() {
-    this.rafId || (this.rafId = requestAnimationFrame(this._boundRaf));
+    this._boundRaf = this._boundRaf || this.onRaf.bind(this), this.rafId || (this.rafId = requestAnimationFrame(this._boundRaf));
   },
-  onRaf() {
-    this.rafId = null, p.matches ? this.velocity = 0 : (this.velocity *= this.decay, Math.abs(this.velocity) < this.velocityThreshold && (this.velocity = 0));
-    const i = this.velocity;
-    let e = null;
-    for (const t of this.elements)
-      t._intersectionObserver || (e ??= r.refresh().currentHeight, t._updateVisibilityFallback({
-        currentHeight: e
-      })), !(!t._visible || t._paused) && (t._receiveVelocity(i), t._tickProgress());
-    i !== 0 && (this.rafId = requestAnimationFrame(this._boundRaf));
+  onRaf(i) {
+    this.rafId = null;
+    const e = this.lastFrameTime > 0 ? Math.min(i - this.lastFrameTime, _) : 16;
+    this.lastFrameTime = i, p.matches ? this.velocity = 0 : (this.velocity *= this.decay, Math.abs(this.velocity) < this.velocityThreshold && (this.velocity = 0));
+    const t = this.velocity;
+    let s = null, r = !1;
+    for (const n of this.elements)
+      n._intersectionObserver || (s ??= o.refresh().currentHeight, n._updateVisibilityFallback({
+        currentHeight: s
+      })), !(!n._visible || n._paused) && (n._receiveVelocity(t), n._tickProgress(e) && (r = !0));
+    t !== 0 || r ? this.rafId = requestAnimationFrame(this._boundRaf) : this.lastFrameTime = 0;
   }
 };
-class h extends HTMLElement {
+class b extends HTMLElement {
   // private fields
   #e = null;
-  #s = -1;
-  #i = 0;
-  #t = null;
-  static #r = !1;
+  #r = null;
+  #n = -1;
+  #o = 0;
+  #l = 0;
+  #s = null;
+  // null means never ticked — first tick snaps
+  #t = !1;
+  // one-shot: skip easing on the next tick
+  #a = !1;
+  #i = null;
+  static #c = !1;
   // public fields (accessed by ScrollProgressManager)
   _visible = !1;
   _paused = !1;
   _intersectionObserver = null;
   constructor() {
-    super(), this.#l();
+    super(), this.#p();
   }
   static get observedAttributes() {
     return [
       "playhead-element-start",
       "playhead-viewport-start",
       "playhead-element-end",
-      "playhead-viewport-end"
+      "playhead-viewport-end",
+      "smoothing"
     ];
   }
   connectedCallback() {
     const e = this;
-    r.init(), r.refresh(), e._buildCache(), e.#n(), e._updateVisibilityFallback(), e._tickProgress(), n.register(e);
+    o.init(), o.refresh(), e._buildCache(), e.#u(), e._updateVisibilityFallback(), e._tickProgress(), l.register(e);
   }
   disconnectedCallback() {
     const e = this;
-    e.#o(), n.unregister(e);
+    e.#b(), l.unregister(e);
   }
-  attributeChangedCallback() {
-    r.refresh(), this._buildCache(), n.tick();
+  // fires before connectedCallback for attributes present in markup, so both
+  // branches have to survive being run on a not-yet-connected element
+  attributeChangedCallback(e) {
+    const t = this;
+    if (e === "smoothing") {
+      t.#d(), t.#t = !0, l.tick();
+      return;
+    }
+    t.#h(), o.refresh(), t._buildCache(), l.tick();
   }
   // public api
   getProgress() {
@@ -124,70 +155,99 @@ class h extends HTMLElement {
     return parseFloat(this.style.getPropertyValue("--scroll-progress-velocity") || 0);
   }
   update() {
-    r.refresh(), this._buildCache(), this._updateVisibilityFallback(), n.tick();
+    o.refresh(), this._buildCache(), this._updateVisibilityFallback(), l.tick();
   }
   pause() {
     this._paused = !0;
   }
   resume() {
-    this._paused = !1, n.tick();
+    this._paused = !1, l.tick();
   }
   // manager-facing methods (called by ScrollProgressManager)
   _receiveVelocity(e) {
     const t = this;
-    if (!(e === 0 && t.#i !== 0)) {
-      if (Math.abs(e - t.#i) <= 0.1)
+    if (!(e === 0 && t.#o !== 0)) {
+      if (Math.abs(e - t.#o) <= 0.1)
         return;
     }
-    t.#i = e, t.style.setProperty("--scroll-progress-velocity", String(e)), t.dispatchEvent(
+    t.#o = e, t.style.setProperty("--scroll-progress-velocity", String(e)), t.dispatchEvent(
       new CustomEvent("scroll-progress:velocity", {
         detail: { velocity: e },
         bubbles: !0
       })
     );
   }
-  _tickProgress() {
-    const e = this;
-    if (!e.#e) return;
-    const t = e.getBoundingClientRect(), s = e.#e.startTop - t.top, o = g(e.#e.distance ? s / e.#e.distance : 0, 0, 1);
-    Math.abs(o - e.#s) > 1e-3 && (e.#s = o, e.style.setProperty("--scroll-progress", String(o)), e.dispatchEvent(
+  // returns true while smoothed progress is still easing, which keeps the shared loop alive
+  _tickProgress(e = 0) {
+    const t = this;
+    if (!t.#e) return !1;
+    const s = t.getBoundingClientRect(), r = t.#e.startTop - s.top, n = v(t.#e.distance ? r / t.#e.distance : 0, 0, 1), c = t.#l, h = c <= 0 || p.matches || t.#t || t.#s === null;
+    let a = n, d = !1;
+    if (h)
+      t.#t = !1;
+    else {
+      const g = n - t.#s;
+      Math.abs(g) > w && (a = t.#s + g * (1 - Math.exp(-e / c)), d = !0);
+    }
+    const m = t.#a && !d;
+    return t.#a = d, t.#s = a, a !== t.#n && (m || Math.abs(a - t.#n) > 1e-3) && (t.#n = a, t.style.setProperty("--scroll-progress", String(a)), t.dispatchEvent(
       new CustomEvent("scroll-progress:update", {
-        detail: { progress: o },
+        detail: { progress: a },
         bubbles: !0
       })
-    ));
+    )), d;
   }
-  _buildCache({ rect: e = this.getBoundingClientRect(), stableHeight: t = r.stableHeight } = {}) {
-    const s = this, o = s.getAttribute("playhead-element-start") || "top", f = s.getAttribute("playhead-viewport-start") || "bottom", v = s.getAttribute("playhead-element-end") || "bottom", w = s.getAttribute("playhead-viewport-end") || "top", a = (l, c) => l === "top" ? 0 : l === "center" ? c.height / 2 : c.height, d = (l, c) => l === "top" ? 0 : l === "center" ? c / 2 : c, _ = a(o, e), m = a(v, e), u = d(f, t) - _, b = d(w, t) - m;
-    s.#e = { startTop: u, endTop: b, distance: u - b };
+  _buildCache({ rect: e = this.getBoundingClientRect(), stableHeight: t = o.stableHeight } = {}) {
+    const s = this;
+    s.#r || s.#h();
+    const r = s.#r, n = r.vs * t - r.es * e.height, c = r.ve * t - r.ee * e.height, h = s.#e;
+    s.#e = { startTop: n, endTop: c, distance: n - c }, (!h || Math.abs(n - h.startTop) > f || Math.abs(c - h.endTop) > f) && (s.#t = !0);
   }
   _updateVisibilityFallback({
     rect: e = this.getBoundingClientRect(),
-    currentHeight: t = r.currentHeight
+    currentHeight: t = o.currentHeight
   } = {}) {
-    const s = this;
-    s._visible = e.bottom > 0 && e.top < t;
+    const s = this, r = e.bottom > 0 && e.top < t;
+    r && !s._visible && (s.#t = !0), s._visible = r;
   }
   // private methods (internal only)
-  #n() {
+  // defaults match the keyword defaults: element top / viewport bottom → element bottom / viewport top
+  #h() {
+    const e = this;
+    e.#r = {
+      es: u(e.getAttribute("playhead-element-start"), 0, "playhead-element-start"),
+      vs: u(e.getAttribute("playhead-viewport-start"), 1, "playhead-viewport-start"),
+      ee: u(e.getAttribute("playhead-element-end"), 1, "playhead-element-end"),
+      ve: u(e.getAttribute("playhead-viewport-end"), 0, "playhead-viewport-end")
+    };
+  }
+  // smoothing is an ms time constant — absent, zero or unparseable all mean off
+  #d() {
+    const e = this, t = parseFloat(e.getAttribute("smoothing"));
+    e.#l = Number.isFinite(t) && t > 0 ? t : 0;
+  }
+  #u() {
     const e = this;
     "IntersectionObserver" in window && (e._intersectionObserver = new window.IntersectionObserver(
       (t) => {
         for (const s of t)
-          s.target === e && (e._visible = s.isIntersecting, e._visible && n.tick());
+          if (s.target === e) {
+            const r = s.isIntersecting;
+            r && !e._visible && (e.#t = !0), e._visible = r, r && l.tick();
+          }
       },
       { threshold: [0, 1e-3, 1] }
-    ), e._intersectionObserver.observe(e)), "ResizeObserver" in window && (e.#t = new window.ResizeObserver((t) => {
+    ), e._intersectionObserver.observe(e)), "ResizeObserver" in window && (e.#i = new window.ResizeObserver((t) => {
       for (const s of t)
-        s.target === e && (e._buildCache(), e._visible && n.tick());
-    }), e.#t.observe(e));
+        s.target === e && (e._buildCache(), e._visible && l.tick());
+    }), e.#i.observe(e));
   }
-  #o() {
+  #b() {
     const e = this;
-    e._intersectionObserver && (e._intersectionObserver.disconnect(), e._intersectionObserver = null), e.#t && (e.#t.disconnect(), e.#t = null);
+    e._intersectionObserver && (e._intersectionObserver.disconnect(), e._intersectionObserver = null), e.#i && (e.#i.disconnect(), e.#i = null);
   }
-  #l() {
-    if (h.#r) return;
+  #p() {
+    if (b.#c) return;
     const e = document.createElement("style");
     e.textContent = `
 scroll-progress {
@@ -196,10 +256,10 @@ scroll-progress {
 	--scroll-progress-velocity: 0;
 	will-change: transform;
 	backface-visibility: hidden;
-}`, document.head.appendChild(e), h.#r = !0;
+}`, document.head.appendChild(e), b.#c = !0;
   }
 }
-window.customElements.get("scroll-progress") || window.customElements.define("scroll-progress", h);
+window.customElements.get("scroll-progress") || window.customElements.define("scroll-progress", b);
 export {
-  h as ScrollProgress
+  b as ScrollProgress
 };

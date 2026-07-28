@@ -1,4 +1,4 @@
-![gzip size](https://img.shields.io/badge/gzip-2.2kb-blue)
+![gzip size](https://img.shields.io/badge/gzip-2.7kb-blue)
 
 # Scroll Progress Web Component
 
@@ -8,14 +8,15 @@ A high-performance, customizable Web Component that tracks scroll progress relat
 
 ## Features
 
-- 🎯 **Configurable playhead anchors** for both element and viewport start/end positions
+- 🎯 **Configurable playhead anchors** for both element and viewport start/end positions — keywords or percentages
+- 🪶 **Optional progress smoothing** with a frame-rate independent time constant
 - ⚡ **Optimized animations** driven by `requestAnimationFrame` (no scroll events)
 - 🖥️ **GPU accelerated** using `will-change: transform` and `backface-visibility: hidden`
 - 🕵️‍♂️ **Visibility-aware** updates using Intersection Observer to minimize CPU usage
 - 📏 **Responsive to viewport resizes** with throttled resize handling
 - 🌊 **Scroll velocity tracking** with physics simulation (friction, attraction to zero)
 - 🌐 **Framework agnostic** — works with any frontend framework or vanilla JS
-- 📦 **Lightweight & zero dependencies** — only 2.2kb gzipped!
+- 📦 **Lightweight & zero dependencies** — only 2.7kb gzipped!
 - 🔧 **Simple API & CSS custom property exposure** for full styling control
 - ♿ **Respects `prefers-reduced-motion`** — velocity is disabled when reduced motion is preferred
 - 📱 **Mobile Safari safe** — uses `100svh` viewport probe to avoid address bar layout shifts
@@ -58,10 +59,46 @@ Add the custom element anywhere in your HTML:
 
 ### Playhead Anchors
 
-- `playhead-element-start` and `playhead-element-end`: anchors on the element (`top`, `center`, or `bottom`)
-- `playhead-viewport-start` and `playhead-viewport-end`: anchors on the viewport (`top`, `center`, or `bottom`)
+- `playhead-element-start` and `playhead-element-end`: anchors on the element
+- `playhead-viewport-start` and `playhead-viewport-end`: anchors on the viewport
 
 These determine the start and end points for scroll progress calculation.
+
+Each anchor accepts a keyword (`top`, `center`, `bottom`) or a percentage (`25%`, `75%`). Percentages are measured from the top of the element or viewport, so `top` is `0%`, `center` is `50%`, and `bottom` is `100%`:
+
+```html
+<!-- progress runs across the middle half of the viewport -->
+<scroll-progress playhead-viewport-start="75%" playhead-viewport-end="25%">
+  ...
+</scroll-progress>
+```
+
+Percentages are **not** clamped to 0–100%, so over-scan anchors like `150%` (below the viewport) or `-20%` (above it) are valid.
+
+Defaults, if an attribute is omitted:
+
+| Attribute                 | Default          |
+| ------------------------- | ---------------- |
+| `playhead-element-start`  | `top` (`0%`)     |
+| `playhead-viewport-start` | `bottom` (`100%`)|
+| `playhead-element-end`    | `bottom` (`100%`)|
+| `playhead-viewport-end`   | `top` (`0%`)     |
+
+An unrecognized value never throws — it logs a single `console.warn` and falls back to that attribute's default.
+
+### Smoothing
+
+The optional `smoothing` attribute eases progress toward the raw scroll position instead of tracking it exactly:
+
+```html
+<scroll-progress smoothing="400">...</scroll-progress>
+```
+
+- The value is a **time constant in milliseconds** — roughly 63% of the remaining gap is closed every `smoothing` ms, which makes the easing frame-rate independent. Larger values lag further behind.
+- `0`, absent, or an unparseable value means no smoothing (the default).
+- When smoothing is active, the `--scroll-progress` variable, the `scroll-progress:update` event, and `getProgress()` all carry the **smoothed** value; the raw scroll position stays internal.
+- Progress snaps instead of easing when the range changes underneath it — a resize, a `ResizeObserver` callback, `update()`, an attribute change, or the element scrolling back into view — so it never animates through a position the user never scrolled past.
+- `prefers-reduced-motion: reduce` bypasses smoothing entirely, matching the way velocity is disabled.
 
 ---
 
@@ -135,7 +172,7 @@ Override these as needed in your stylesheets.
   - Smooth velocity accumulation (15% smoothing factor)
   - Combined friction + attraction decay (0.76× per frame) for natural deceleration
   - Clean zero state when velocity drops below threshold
-- The global RAF loop automatically stops when velocity reaches zero and restarts on the next scroll or resize event.
+- The global RAF loop automatically stops once velocity reaches zero **and** every smoothed element has settled on its target, then restarts on the next scroll or resize event. Off-screen and paused elements never hold the loop open.
 - When `prefers-reduced-motion: reduce` is active, velocity is forced to 0.
 - Both scroll progress and velocity are exposed as CSS variables for smooth, GPU-accelerated animations with no scroll event listeners.
 

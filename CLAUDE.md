@@ -35,13 +35,17 @@ This is a **vanilla Web Component** library that creates a `<scroll-progress>` c
 - **Hybrid privacy**: `#` private fields for internal state, `_` prefix for methods called by `ScrollProgressManager`
 - **Observer pattern**: `IntersectionObserver` for visibility gating, `ResizeObserver` for element size changes
 - **Caching strategy**: Pre-calculates anchor positions to minimize DOM reads during scroll
-- **Global RAF loop**: Single `requestAnimationFrame` loop in `ScrollProgressManager` updates all visible elements; stops when velocity reaches 0
+- **Global RAF loop**: Single `requestAnimationFrame` loop in `ScrollProgressManager` updates all visible elements; stops when velocity reaches 0 **and** every smoothed element has settled (invisible/paused elements can't hold it open)
 - **Static style injection**: Injects base styles once per component definition
 
 ### Build System
 - **Vite-based**: Two-format builds (ESM, UMD minified)
 - **Development mode**: Vite dev server serves source directly at localhost:3001
 - **No transpilation**: Modern browser targets
+- **Size claims are hand-maintained** — the README badge + feature bullet and the demo's
+  "Size (gzip)" chip all quote the UMD gzip size (~2.7 kB as of the current dist).
+  Re-measure with `gzip -c dist/scroll-progress.min.js | wc -c` and update all three
+  when the bundle changes materially; they've drifted stale before.
 
 ### File Structure
 - `src/scroll-progress.js` - Main component implementation
@@ -51,8 +55,17 @@ This is a **vanilla Web Component** library that creates a `<scroll-progress>` c
 - `eslint.config.js` - ESLint flat config for modern ES modules
 
 ### Component Attributes
-- `playhead-element-start/end` - Element anchor points (top/center/bottom)
-- `playhead-viewport-start/end` - Viewport anchor points (top/center/bottom)
+- `playhead-element-start/end` - Element anchor points (`top`/`center`/`bottom` or a percentage like `25%`)
+- `playhead-viewport-start/end` - Viewport anchor points (same syntax)
+- `smoothing` - Easing time constant in ms; `0`/absent/invalid = off
+
+Anchors are parsed by `anchorToFraction()` into fractions (`top` = 0, `center` = 0.5, `bottom` = 1). Percentages are **not** clamped to 0–1 so over-scan anchors (`150%`, `-20%`) work. Invalid values never throw — one `console.warn` plus the attribute's default. Parsing happens in `#parseAnchors()` on attribute change (not in `_buildCache`) so resize-driven rebuilds don't spam the warning.
+
+### Progress Smoothing
+- `#currentProgress` eases toward the raw target per frame: `current += (target - current) * (1 - Math.exp(-delta / smoothing))`, using the rAF timestamp delta clamped to `MAX_FRAME_DELTA` (64ms) so a woken loop can't take one huge step.
+- Settles when the gap is `<= SNAP_EPSILON` (0.0005) and snaps exact. Because the final easing steps are smaller than the 0.001 publish epsilon, settling force-publishes once — otherwise the resting CSS var would sit short of the target.
+- **Snap triggers** (`#snapNext`): `_buildCache()` when the recomputed range moved more than `RANGE_EPSILON` (0.5px) — resize / `ResizeObserver` / `update()` / attribute change; the epsilon keeps mobile visualViewport resize storms (identical rebuilds) from collapsing an in-flight ease. Also: visibility false→true in both the IO callback and `_updateVisibilityFallback`, a `smoothing` attribute change, and the first tick (`#currentProgress === null`). `prefers-reduced-motion` bypasses smoothing entirely.
+- When smoothing is on, `--scroll-progress`, `scroll-progress:update`, and `getProgress()` all carry the smoothed value; the raw target stays internal.
 
 ### CSS Variables Exposed
 - `--scroll-progress` - Scroll progress value (0-1)
