@@ -649,8 +649,14 @@
       background: #e8e0cc;
       will-change: transform;
       z-index: 2;
-      transform: translate3d(0, calc(var(--scroll-progress) * var(--drift, -80px)), 0)
-        scale(calc(1 - var(--scroll-progress) * var(--shrink, 0.3)));
+      /* progress² — moving the whole time on screen, gentle on entry,
+         accelerating toward the exit */
+      transform: translate3d(
+          0,
+          calc(var(--scroll-progress) * var(--scroll-progress) * var(--drift, -80px)),
+          0
+        )
+        scale(calc(1 - var(--scroll-progress) * var(--scroll-progress) * var(--shrink, 0.3)));
     }
 
     .star-glow {
@@ -1182,16 +1188,16 @@ el.<span class="fn">resume</span>()</code></pre>
     <!-- 02 TRANSITION OUT — Starry Night -->
     <section class="demo-card">
       <h2>Transition Out</h2>
-      <p class="desc">Triggered by the top of the screen — progress starts at 0 when the element is at the top and reaches 1 as it scrolls away. Great for exit animations.</p>
+      <p class="desc">Progress runs the whole time the element is on screen, and the stars ease in by squaring it — <code>calc(p&nbsp;*&nbsp;p&nbsp;*&nbsp;drift)</code> — so they drift gently on entry and accelerate as they exit.</p>
       <p class="settings">
-        playhead-viewport-start="top"<br />
+        playhead-viewport-start="bottom"<br />
         playhead-viewport-end="top"<br />
         playhead-element-start="top"<br />
         playhead-element-end="bottom"
       </p>
       <scroll-progress
         playhead-element-start="top"
-        playhead-viewport-start="top"
+        playhead-viewport-start="bottom"
         playhead-element-end="bottom"
         playhead-viewport-end="top"
         class="demo-stage transition-out-demo">
